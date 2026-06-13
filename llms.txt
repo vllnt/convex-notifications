@@ -1,0 +1,26 @@
+# @vllnt/convex-notifications
+
+> Per-subject directed inbox — deliver notifications with read/unread state and fan-out as a Convex component
+
+`@vllnt/convex-notifications` is a publishable Convex component. It targets `convex@^1.41.0`.
+It stores one sandboxed table - `notifications` (a component-minted `notificationId`, the opaque recipient `subjectRef`, a host `type` tag, opaque host `payload`, a derived `read` boolean + `readAt` timestamp, and a `createdAt` server timestamp). A host mutation calls `deliver(subjectRef | subjectRefs[], type, payload?)` to fan one notification out to each recipient (unread, one minted id per row) and gets the ids back; a recipient's UI calls `list(subjectRef, paginationOpts, { unreadOnly? })` to page the inbox newest-first, `unreadCount(subjectRef)` for the unread total, `get(notificationId)` for one, `markRead(notificationId)` (idempotent) and `markAllRead(subjectRef)` (bounded, self-rescheduling) to clear read state - all reactive in Convex. Reads are subject-bounded - a `list`/`unreadCount` never spans another subject's inbox. Time is read from the server clock inside every handler - no caller-supplied clock. A bounded, self-rescheduling `purge` (and a built-in daily cron) removes only read notifications past a retention window; unread are never purged. This is a directed inbox (push, with read state), distinct from an activity feed (an actor's own pull timeline); channel fan-out (email/push) stays in the host. The host owns the recipient, auth, and the `payload` type (the client is generic over it, with an optional `payloadValidator` parser narrowing the opaque stored value at the boundary - never a `v.any()` dump); the component owns only the inbox. Mount-safe: it runs correctly under multiple named `app.use` mounts.
+
+## Docs
+
+- [README](README.md): Project overview, installation, usage examples, architecture
+- [API Reference](docs/API.md): Public class methods, return shapes, error codes, cron
+- [Changelog](CHANGELOG.md): Version history and release notes
+- [Contributing](CONTRIBUTING.md): Development setup, validation commands, release workflow
+
+## Examples
+
+- [Example component wrapper](example/convex/example.ts): Host-app wrapper functions
+- [Example tests](example/convex/example.test.ts): End-to-end usage coverage with `convex-test`
+
+## Optional
+
+- [AGENTS](AGENTS.md): Canonical agent instructions for this repository
+- [Security Policy](SECURITY.md): Vulnerability reporting policy
+- [Code of Conduct](CODE_OF_CONDUCT.md): Community participation guidelines
+- [License](LICENSE): MIT license
+- [Full source bundle](llms-full.txt): Aggregated README, changelog, API docs, and key source files
