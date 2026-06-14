@@ -138,8 +138,7 @@ This component ships **backend-only** — no `./react` entry. An inbox, unread
 count, and unread list are ordinary reactive `useQuery` calls over the host's own
 re-exported `list` / `unreadCount` / `get` function refs (those return live in
 Convex), so a dedicated hook would add a wrapper with no value over the host's
-existing `api`. If a future consumer needs a shared management surface the analysis
-will be re-run (per the Component Standard's front-end tooling decision).
+existing `api`.
 
 ## Security Model
 
