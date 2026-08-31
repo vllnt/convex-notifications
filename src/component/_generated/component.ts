@@ -36,18 +36,18 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         { notificationIds: Array<string> },
         Name
       >;
-      markRead: FunctionReference<
-        "mutation",
-        "internal",
-        { notificationId: string },
-        null,
-        Name
-      >;
       markAllRead: FunctionReference<
         "mutation",
         "internal",
         { batch: number; subjectRef: string },
         number,
+        Name
+      >;
+      markRead: FunctionReference<
+        "mutation",
+        "internal",
+        { notificationId: string },
+        null,
         Name
       >;
       purge: FunctionReference<

@@ -84,7 +84,7 @@ export const markRead = mutation({
     if (row.read) {
       return null;
     }
-    await ctx.db.patch(row._id, { read: true, readAt: Date.now() });
+    await ctx.db.patch("notifications", row._id, { read: true, readAt: Date.now() });
     return null;
   },
 });
@@ -112,7 +112,7 @@ export const markAllRead = mutation({
       .take(args.batch);
 
     for (const row of unread) {
-      await ctx.db.patch(row._id, { read: true, readAt: now });
+      await ctx.db.patch("notifications", row._id, { read: true, readAt: now });
     }
 
     if (unread.length === args.batch) {
@@ -148,7 +148,7 @@ export const purge = mutation({
       .take(args.batch);
 
     for (const row of stale) {
-      await ctx.db.delete(row._id);
+      await ctx.db.delete("notifications", row._id);
     }
     const removed = stale.length;
 
