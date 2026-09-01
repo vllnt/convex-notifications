@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { register } from "../../src/test";
+import { Notifications } from "../../src/client";
 import crons, {
   PURGE_BATCH,
   PURGE_INTERVAL,
@@ -99,6 +100,32 @@ describe("notifications — fan-out", () => {
     await expect(
       t.mutation(api.example.deliver, { subjectRefs: [], type: "t" }),
     ).rejects.toThrow(/at least one subjectRef/);
+  });
+
+  test.each([Number.NaN, 0, -1, 1.5, 501])("rejects invalid maxFanOut %s", async (maxFanOut) => {
+    const t = setup();
+    await expect(
+      t.mutation(api.example.deliverRaw, {
+        subjectRefs: ["u"],
+        type: "t",
+        maxFanOut,
+      }),
+    ).rejects.toThrow(/INVALID_MAX_FANOUT|integer between/);
+    expect(() => new Notifications({} as never, { maxFanOut })).toThrow(/integer between/);
+  });
+
+  test("an explicitly unvalidated unknown client passes opaque payloads through", async () => {
+    const runMutation = vi.fn(async (_reference: unknown, args: { payload?: unknown }) => ({
+      notificationIds: [String(args.payload)],
+    }));
+    const client = new Notifications({ mutations: { deliver: "deliver" } } as never);
+    const result = await client.deliver(
+      { runMutation } as never,
+      "u",
+      "opaque",
+      "payload",
+    );
+    expect(result).toEqual({ notificationIds: ["payload"] });
   });
 
   test("a fan-out over the cap is rejected (strict client maxFanOut=2)", async () => {
@@ -228,6 +255,13 @@ describe("notifications — list (paginated, newest first, unread filter)", () =
 });
 
 describe("notifications — markAllRead", () => {
+  test.each([Number.NaN, 0, -1, 1.5, 501])("rejects invalid batch %s", async (batch) => {
+    const t = setup();
+    await expect(
+      t.mutation(api.example.markAllRead, { subjectRef: "u", batch }),
+    ).rejects.toThrow(/INVALID_BATCH|integer between/);
+  });
+
   test("marks every unread for one subject and leaves others alone", async () => {
     const t = setup();
     await t.mutation(api.example.deliver, {
@@ -359,7 +393,7 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
     ).not.toBeNull();
   });
 
-  test("purge with no cutoff defaults to server now", async () => {
+  test("purge with no cutoff honors the 30-day retention window", async () => {
     const t = setup();
     const d = await t.mutation(api.example.deliverOne, {
       subjectRef: "u1",
@@ -368,8 +402,24 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
     await t.mutation(api.example.markRead, {
       notificationId: d.notificationIds[0],
     });
-    vi.setSystemTime(1_000);
+    vi.setSystemTime(30 * 24 * 60 * 60 * 1_000);
+    expect(await t.mutation(api.example.purge, {})).toBe(0);
+    vi.setSystemTime(30 * 24 * 60 * 60 * 1_000 + 1);
     expect(await t.mutation(api.example.purge, {})).toBe(1);
+  });
+
+  test.each([Number.NaN, 0, -1, 1.5, 501])("rejects invalid batch %s", async (batch) => {
+    const t = setup();
+    await expect(t.mutation(api.example.purge, { batch })).rejects.toThrow(
+      /INVALID_BATCH|integer between/,
+    );
+  });
+
+  test("rejects a non-finite cutoff", async () => {
+    const t = setup();
+    await expect(
+      t.mutation(api.example.purge, { before: Number.NaN }),
+    ).rejects.toThrow(/INVALID_BEFORE|finite/);
   });
 
   test("purge on an empty table returns 0", async () => {

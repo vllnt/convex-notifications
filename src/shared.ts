@@ -21,3 +21,9 @@ export const DEFAULT_PURGE_BATCH = 200;
  * per-client with `maxFanOut`.
  */
 export const DEFAULT_MAX_FANOUT = 256;
+
+/** Absolute write-amplification ceiling enforced even when a client overrides the default. */
+export const MAX_FANOUT = 500;
+
+/** Maximum rows mutated by one maintenance transaction. */
+export const MAX_PURGE_BATCH = 500;

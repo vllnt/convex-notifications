@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@convex-dev/aggregate':
+        specifier: ^0.3.0
+        version: 0.3.0(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^5.0.0
@@ -19,16 +23,16 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       '@vllnt/eslint-config':
         specifier: 2.0.0
-        version: 2.0.0(@typescript-eslint/parser@8.69.0(@typescript/typescript6@6.0.2)(eslint@9.39.5))(@typescript/typescript6@6.0.2)(convex@1.45.0)(eslint@9.39.5)(prettier@3.9.6)(turbo@2.9.18)
+        version: 2.0.0(@typescript-eslint/parser@8.69.0(@typescript/typescript6@6.0.2)(eslint@9.39.5))(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(eslint@9.39.5)(prettier@3.9.6)(turbo@2.9.18)
       '@vllnt/typescript':
         specifier: 2.0.0
         version: 2.0.0(@typescript/typescript6@6.0.2)
       convex:
         specifier: ^1.45.0
-        version: 1.45.0
+        version: 1.45.0(react@19.2.8)
       convex-test:
         specifier: ^0.0.56
-        version: 0.0.56(convex@1.45.0)
+        version: 0.0.56(convex@1.45.0(react@19.2.8))
       eslint:
         specifier: ^9.39.5
         version: 9.39.5
@@ -121,6 +125,17 @@ packages:
   '@boundaries/elements@1.2.0':
     resolution: {integrity: sha512-W65Gum02liMd3hmNrLmDBX1u5BmRMcunouFjLXyhxHnNY4YlK1kTxsgfflZ5XBGSnPnO0MkiUzAcoGzYrlx0RQ==}
     engines: {node: '>=18.18'}
+
+  '@convex-dev/aggregate@0.3.0':
+    resolution: {integrity: sha512-WXLOOkcQ3nUjfXZy3/yYrBcVJz2yFA0rYrcyizbqrp2nC7NdRKDaP24+pm3fyh7JwkaCRo+nJTBTsjE89vyLZQ==}
+    peerDependencies:
+      convex: ^1.43.0
+
+  '@convex-dev/batch-worker@0.3.0':
+    resolution: {integrity: sha512-9CNwrhooFw59vRFEBiibD2/S0VEe6BiPDyJPlvybVkxEzeCKHjGwzaHtez6FuD6wIJ+GglWGqvlu4fOAEh9+pg==}
+    peerDependencies:
+      convex: ^1.43.0
+      react: ^18.3.1 || ^19.0.0
 
   '@convex-dev/eslint-plugin@4.0.0':
     resolution: {integrity: sha512-7bYP8Fkk+19L7LWl3xIqUqq/0yIEZNoUQHOodZKIvupqmgaMisz8NKz6OkmMwBVLUQ0sh/9+iPK1OyASANiWyw==}
@@ -973,6 +988,28 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
+
+  convex-helpers@0.1.122:
+    resolution: {integrity: sha512-G5b54+RUPyitwEou7VPBxnz5/Tgy8gjtyN0zPgagOjguyBqoh9IjlsVQtWOKY7pxo/IREjF+N1khZmyEuzqbiw==}
+    hasBin: true
+    peerDependencies:
+      '@standard-schema/spec': ^1.0.0
+      convex: ^1.43.0
+      hono: ^4.0.5
+      react: ^17.0.2 || ^18.0.0 || ^19.0.0
+      typescript: ^5.5 || ^6.0.0 || ^7.0.0
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      '@standard-schema/spec':
+        optional: true
+      hono:
+        optional: true
+      react:
+        optional: true
+      typescript:
+        optional: true
+      zod:
+        optional: true
 
   convex-test@0.0.56:
     resolution: {integrity: sha512-dLYXlQjKFoGqvjAmPzyLgb2HsYI7iLo1iuNTU2DZmSrMRLWosYk94erjSU67GG5ovfP6+MjX8RJO+ebhmL6QYA==}
@@ -1941,6 +1978,10 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
+  react@19.2.8:
+    resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
+    engines: {node: '>=0.10.0'}
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
@@ -2472,11 +2513,34 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  '@convex-dev/eslint-plugin@4.0.0(@typescript/typescript6@6.0.2)(convex@1.45.0)(eslint@9.39.5)':
+  '@convex-dev/aggregate@0.3.0(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)':
+    dependencies:
+      '@convex-dev/batch-worker': 0.3.0(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      convex: 1.45.0(react@19.2.8)
+      convex-helpers: 0.1.122(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - react
+      - typescript
+      - zod
+
+  '@convex-dev/batch-worker@0.3.0(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)':
+    dependencies:
+      convex: 1.45.0(react@19.2.8)
+      convex-helpers: 0.1.122(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      react: 19.2.8
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - typescript
+      - zod
+
+  '@convex-dev/eslint-plugin@4.0.0(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(eslint@9.39.5)':
     dependencies:
       '@typescript-eslint/types': 8.58.2
       '@typescript-eslint/utils': 8.58.2(@typescript/typescript6@6.0.2)(eslint@9.39.5)
-      convex: 1.45.0
+      convex: 1.45.0(react@19.2.8)
     transitivePeerDependencies:
       - eslint
       - supports-color
@@ -3014,9 +3078,9 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
 
-  '@vllnt/eslint-config@2.0.0(@typescript-eslint/parser@8.69.0(@typescript/typescript6@6.0.2)(eslint@9.39.5))(@typescript/typescript6@6.0.2)(convex@1.45.0)(eslint@9.39.5)(prettier@3.9.6)(turbo@2.9.18)':
+  '@vllnt/eslint-config@2.0.0(@typescript-eslint/parser@8.69.0(@typescript/typescript6@6.0.2)(eslint@9.39.5))(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(eslint@9.39.5)(prettier@3.9.6)(turbo@2.9.18)':
     dependencies:
-      '@convex-dev/eslint-plugin': 4.0.0(@typescript/typescript6@6.0.2)(convex@1.45.0)(eslint@9.39.5)
+      '@convex-dev/eslint-plugin': 4.0.0(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(eslint@9.39.5)
       '@eslint/js': 9.39.5
       '@next/eslint-plugin-next': 16.3.4(eslint@9.39.5)
       eslint: 9.39.5
@@ -3227,15 +3291,26 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-test@0.0.56(convex@1.45.0):
+  convex-helpers@0.1.122(@standard-schema/spec@1.1.0)(@typescript/typescript6@6.0.2)(convex@1.45.0(react@19.2.8))(react@19.2.8)(zod@4.5.4):
     dependencies:
-      convex: 1.45.0
+      convex: 1.45.0(react@19.2.8)
+    optionalDependencies:
+      '@standard-schema/spec': 1.1.0
+      react: 19.2.8
+      typescript: '@typescript/typescript6@6.0.2'
+      zod: 4.5.4
 
-  convex@1.45.0:
+  convex-test@0.0.56(convex@1.45.0(react@19.2.8)):
+    dependencies:
+      convex: 1.45.0(react@19.2.8)
+
+  convex@1.45.0(react@19.2.8):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.9.6
       ws: 8.21.0
+    optionalDependencies:
+      react: 19.2.8
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -4305,6 +4380,8 @@ snapshots:
   queue-microtask@1.2.3: {}
 
   react-is@16.13.1: {}
+
+  react@19.2.8: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:

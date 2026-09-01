@@ -21,10 +21,9 @@ argument.
 **Time is server-sourced.** Every handler stamps `createdAt`/`readAt` from
 `Date.now()` itself; no method accepts a caller-supplied clock.
 
-**Validation.** When `payloadValidator` is set it runs at the client boundary:
-over the value written by `deliver` (before storage) and over the value returned by
-`get` / `list` (on read). It must return the typed value or throw. Omit it to leave
-the opaque data unvalidated.
+**Validation.** A typed `Notifications<TPayload>` client requires `payloadValidator`; it runs at
+the client boundary over values written by `deliver` and returned by `get` / `list`. Use the
+default `Notifications<unknown>` construction to intentionally leave opaque data unvalidated.
 
 ## Mutations
 
@@ -39,7 +38,9 @@ order.
 
 An empty recipient set throws `ConvexError({ code: "EMPTY_FANOUT" })`; a set larger
 than the client's `maxFanOut` throws `ConvexError({ code: "FANOUT_TOO_LARGE" })`, so
-one mutation can never silently amplify past the transaction write budget.
+one mutation can never silently amplify past the transaction write budget. The configured cap
+must be an integer from 1–500. Delivery is intentionally non-idempotent: repeated logical calls
+mint new rows, so at-least-once producers should gate delivery with `@vllnt/convex-idempotency`.
 
 ### `markRead(ctx, notificationId) → null`
 
@@ -58,8 +59,8 @@ unread tail is clean. Idempotent — an already-empty unread inbox marks nothing
 
 ### `purge(ctx, opts?) → number`
 
-`opts`: `{ before?: number; batch?: number }` (defaults: `before = Date.now()`,
-`batch = 200`).
+`opts`: `{ before?: number; batch?: number }` (defaults: `before = Date.now() - 30 days`,
+`batch = 200`; valid batch range: 1–500).
 
 Delete up to `batch` **read** notifications whose `createdAt < before`, oldest
 first via the `by_read_created` index, and return the count removed in the first
@@ -90,9 +91,8 @@ never returns another subject's rows.
 
 ### `unreadCount(ctx, subjectRef) → number`
 
-The number of unread notifications for `subjectRef`, via the
-`by_subject_read_created` index. Subject-bounded. The count walks the unread slice;
-a host expecting very large unread inboxes pairs this with `@convex-dev/aggregate`.
+The number of unread notifications for `subjectRef`, maintained transactionally and queried in
+logarithmic time through the nested official `@convex-dev/aggregate` component. Subject-bounded.
 
 ## Error codes
 
@@ -102,6 +102,8 @@ Coded `ConvexError`s thrown by the component (`error.data.code`):
 |------|-----------|---------|
 | `EMPTY_FANOUT` | `deliver` | The recipient set was empty. |
 | `FANOUT_TOO_LARGE` | `deliver` | The recipient set exceeded the client's `maxFanOut`. |
+| `INVALID_MAX_FANOUT` | `deliver` | `maxFanOut` was not an integer from 1–500. |
+| `INVALID_BATCH` | `markAllRead`, `purge` | `batch` was not an integer from 1–500. |
 | `NOT_FOUND` | `markRead` | No notification has this `notificationId`. |
 
 ## Cron / Maintenance

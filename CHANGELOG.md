@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Apply the documented 30-day default retention window instead of deleting newly read
+  notifications on the next daily sweep.
+- Reject invalid maintenance batches and fan-out limits, with absolute 500-row transaction caps,
+  to prevent scheduler loops and unbounded write amplification.
+- Maintain unread counts transactionally with the official aggregate component instead of an
+  unbounded inbox scan.
+- Require a payload parser for typed clients so stored opaque values cannot violate `TPayload`.
+
 ### Changed
 
 - Treat Convex `_generated` output as CLI-owned, exclude it from formatting, and expose a
