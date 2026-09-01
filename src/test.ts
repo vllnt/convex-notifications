@@ -1,3 +1,4 @@
+import aggregateTest from "@convex-dev/aggregate/test";
 import type { TestConvex } from "convex-test";
 import schema from "./component/schema";
 
@@ -12,4 +13,5 @@ export function register(
   name = "notifications",
 ): void {
   t.registerComponent(name, schema, modules);
+  t.registerComponent(`${name}/aggregate`, aggregateTest.schema, aggregateTest.modules);
 }

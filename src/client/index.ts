@@ -11,7 +11,7 @@ import type {
   NotificationView,
   Parser,
 } from "./types.js";
-import { DEFAULT_MAX_FANOUT, DEFAULT_PURGE_BATCH } from "../shared.js";
+import { DEFAULT_MAX_FANOUT, DEFAULT_PURGE_BATCH, MAX_FANOUT } from "../shared.js";
 
 /**
  * The component's raw notification view, before the client narrows opaque host
@@ -134,10 +134,20 @@ export class Notifications<TPayload = unknown> {
 
   constructor(
     private readonly component: NotificationsComponent,
-    options: NotificationsOptions<TPayload> = {},
+    ...[options]: unknown extends TPayload
+      ? [options?: NotificationsOptions<TPayload>]
+      : [
+          options: NotificationsOptions<TPayload> & {
+            payloadValidator: Parser<TPayload>;
+          },
+        ]
   ) {
-    this.payloadValidator = options.payloadValidator;
-    this.maxFanOut = options.maxFanOut ?? DEFAULT_MAX_FANOUT;
+    const resolvedOptions = options ?? {};
+    this.payloadValidator = resolvedOptions.payloadValidator;
+    this.maxFanOut = resolvedOptions.maxFanOut ?? DEFAULT_MAX_FANOUT;
+    if (!Number.isFinite(this.maxFanOut) || !Number.isInteger(this.maxFanOut) || this.maxFanOut < 1 || this.maxFanOut > MAX_FANOUT) {
+      throw new RangeError(`maxFanOut must be an integer between 1 and ${MAX_FANOUT}`);
+    }
   }
 
   /** Narrow an opaque value through a host parser; pass `undefined` and unset parsers through. */
@@ -245,7 +255,7 @@ export class Notifications<TPayload = unknown> {
 
   /**
    * Delete read notifications whose `createdAt < before` in bounded batches,
-   * oldest first. `before` defaults to the server clock; `batch` caps each pass
+   * oldest first. `before` defaults to the server clock minus 30 days; `batch` caps each pass
    * and the sweep self-reschedules until the read tail is clean. Returns the
    * count removed in the first pass. Unread notifications are never purged. The
    * built-in daily cron drives this automatically.

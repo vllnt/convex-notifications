@@ -1,7 +1,21 @@
+import { DirectAggregate } from "@convex-dev/aggregate";
 import { ConvexError, v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, components } from "./_generated/api";
 import { mutation } from "./_generated/server";
+import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH } from "../shared";
 import { jsonValue } from "./validators";
+
+type UnreadAggregate = { Key: number; Id: string; Namespace: string };
+const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
+
+function validateBatch(batch: number): void {
+  if (!Number.isFinite(batch) || !Number.isInteger(batch) || batch < 1 || batch > MAX_PURGE_BATCH) {
+    throw new ConvexError({
+      code: "INVALID_BATCH",
+      message: `batch must be an integer between 1 and ${MAX_PURGE_BATCH}`,
+    });
+  }
+}
 
 /**
  * Deliver one notification to each of `subjectRefs` — the directed-inbox
@@ -28,6 +42,12 @@ export const deliver = mutation({
   },
   returns: v.object({ notificationIds: v.array(v.string()) }),
   handler: async (ctx, args) => {
+    if (!Number.isFinite(args.maxFanOut) || !Number.isInteger(args.maxFanOut) || args.maxFanOut < 1 || args.maxFanOut > MAX_FANOUT) {
+      throw new ConvexError({
+        code: "INVALID_MAX_FANOUT",
+        message: `maxFanOut must be an integer between 1 and ${MAX_FANOUT}`,
+      });
+    }
     if (args.subjectRefs.length === 0) {
       throw new ConvexError({
         code: "EMPTY_FANOUT",
@@ -52,6 +72,11 @@ export const deliver = mutation({
         payload: args.payload,
         read: false,
         createdAt: now,
+      });
+      await unreadAggregate.insert(ctx, {
+        namespace: subjectRef,
+        key: now,
+        id: notificationId,
       });
       notificationIds.push(notificationId);
     }
@@ -84,6 +109,11 @@ export const markRead = mutation({
     if (row.read) {
       return null;
     }
+    await unreadAggregate.delete(ctx, {
+      namespace: row.subjectRef,
+      key: row.createdAt,
+      id: row.notificationId,
+    });
     await ctx.db.patch("notifications", row._id, { read: true, readAt: Date.now() });
     return null;
   },
@@ -103,6 +133,7 @@ export const markAllRead = mutation({
   args: { subjectRef: v.string(), batch: v.number() },
   returns: v.number(),
   handler: async (ctx, args) => {
+    validateBatch(args.batch);
     const now = Date.now();
     const unread = await ctx.db
       .query("notifications")
@@ -112,6 +143,11 @@ export const markAllRead = mutation({
       .take(args.batch);
 
     for (const row of unread) {
+      await unreadAggregate.delete(ctx, {
+        namespace: row.subjectRef,
+        key: row.createdAt,
+        id: row.notificationId,
+      });
       await ctx.db.patch("notifications", row._id, { read: true, readAt: now });
     }
 
@@ -138,7 +174,11 @@ export const purge = mutation({
   args: { before: v.optional(v.number()), batch: v.number() },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const before = args.before ?? Date.now();
+    validateBatch(args.batch);
+    if (args.before !== undefined && !Number.isFinite(args.before)) {
+      throw new ConvexError({ code: "INVALID_BEFORE", message: "before must be finite" });
+    }
+    const before = args.before ?? Date.now() - DEFAULT_RETENTION_MS;
 
     const stale = await ctx.db
       .query("notifications")

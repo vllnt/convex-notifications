@@ -11,6 +11,19 @@ import { Notifications } from "../../src/client";
  */
 const inbox = new Notifications<{ actor: string } | string | number>(
   components.notifications,
+  {
+    payloadValidator: (value) => {
+      if (typeof value === "string" || typeof value === "number") return value;
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as { actor?: unknown }).actor === "string"
+      ) {
+        return value as { actor: string };
+      }
+      throw new Error("invalid payload");
+    },
+  },
 );
 
 /** A second client on the named `alerts` mount — proves mount-safe isolation. */
@@ -64,6 +77,17 @@ export const deliver = mutation({
   },
   returns: v.object({ notificationIds: v.array(v.string()) }),
   handler: (ctx, a) => inbox.deliver(ctx, a.subjectRefs, a.type, a.payload),
+});
+
+export const deliverRaw = mutation({
+  args: {
+    subjectRefs: v.array(v.string()),
+    type: v.string(),
+    maxFanOut: v.number(),
+  },
+  returns: v.object({ notificationIds: v.array(v.string()) }),
+  handler: (ctx, args) =>
+    ctx.runMutation(components.notifications.mutations.deliver, args),
 });
 
 export const deliverOne = mutation({

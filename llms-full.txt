@@ -143,6 +143,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Apply the documented 30-day default retention window instead of deleting newly read
+  notifications on the next daily sweep.
+- Reject invalid maintenance batches and fan-out limits, with absolute 500-row transaction caps,
+  to prevent scheduler loops and unbounded write amplification.
+- Maintain unread counts transactionally with the official aggregate component instead of an
+  unbounded inbox scan.
+- Require a payload parser for typed clients so stored opaque values cannot violate `TPayload`.
+
+### Changed
+
+- Treat Convex `_generated` output as CLI-owned, exclude it from formatting, and expose a
+  dedicated codegen script.
+- Refresh all direct dependencies to their latest compatible releases for canary validation.
+- Require `convex@^1.45.0` and update `convex-test` to `^0.0.56`.
+
 ## [0.1.0] - 2026-06-14
 
 ### Added
@@ -202,10 +219,9 @@ argument.
 **Time is server-sourced.** Every handler stamps `createdAt`/`readAt` from
 `Date.now()` itself; no method accepts a caller-supplied clock.
 
-**Validation.** When `payloadValidator` is set it runs at the client boundary:
-over the value written by `deliver` (before storage) and over the value returned by
-`get` / `list` (on read). It must return the typed value or throw. Omit it to leave
-the opaque data unvalidated.
+**Validation.** A typed `Notifications<TPayload>` client requires `payloadValidator`; it runs at
+the client boundary over values written by `deliver` and returned by `get` / `list`. Use the
+default `Notifications<unknown>` construction to intentionally leave opaque data unvalidated.
 
 ## Mutations
 
@@ -220,7 +236,9 @@ order.
 
 An empty recipient set throws `ConvexError({ code: "EMPTY_FANOUT" })`; a set larger
 than the client's `maxFanOut` throws `ConvexError({ code: "FANOUT_TOO_LARGE" })`, so
-one mutation can never silently amplify past the transaction write budget.
+one mutation can never silently amplify past the transaction write budget. The configured cap
+must be an integer from 1–500. Delivery is intentionally non-idempotent: repeated logical calls
+mint new rows, so at-least-once producers should gate delivery with `@vllnt/convex-idempotency`.
 
 ### `markRead(ctx, notificationId) → null`
 
@@ -239,8 +257,8 @@ unread tail is clean. Idempotent — an already-empty unread inbox marks nothing
 
 ### `purge(ctx, opts?) → number`
 
-`opts`: `{ before?: number; batch?: number }` (defaults: `before = Date.now()`,
-`batch = 200`).
+`opts`: `{ before?: number; batch?: number }` (defaults: `before = Date.now() - 30 days`,
+`batch = 200`; valid batch range: 1–500).
 
 Delete up to `batch` **read** notifications whose `createdAt < before`, oldest
 first via the `by_read_created` index, and return the count removed in the first
@@ -271,9 +289,8 @@ never returns another subject's rows.
 
 ### `unreadCount(ctx, subjectRef) → number`
 
-The number of unread notifications for `subjectRef`, via the
-`by_subject_read_created` index. Subject-bounded. The count walks the unread slice;
-a host expecting very large unread inboxes pairs this with `@convex-dev/aggregate`.
+The number of unread notifications for `subjectRef`, maintained transactionally and queried in
+logarithmic time through the nested official `@convex-dev/aggregate` component. Subject-bounded.
 
 ## Error codes
 
@@ -283,6 +300,8 @@ Coded `ConvexError`s thrown by the component (`error.data.code`):
 |------|-----------|---------|
 | `EMPTY_FANOUT` | `deliver` | The recipient set was empty. |
 | `FANOUT_TOO_LARGE` | `deliver` | The recipient set exceeded the client's `maxFanOut`. |
+| `INVALID_MAX_FANOUT` | `deliver` | `maxFanOut` was not an integer from 1–500. |
+| `INVALID_BATCH` | `markAllRead`, `purge` | `batch` was not an integer from 1–500. |
 | `NOT_FOUND` | `markRead` | No notification has this `notificationId`. |
 
 ## Cron / Maintenance
@@ -327,6 +346,12 @@ export const DEFAULT_PURGE_BATCH = 200;
  * per-client with `maxFanOut`.
  */
 export const DEFAULT_MAX_FANOUT = 256;
+
+/** Absolute write-amplification ceiling enforced even when a client overrides the default. */
+export const MAX_FANOUT = 500;
+
+/** Maximum rows mutated by one maintenance transaction. */
+export const MAX_PURGE_BATCH = 500;
 
 ```
 
@@ -405,7 +430,7 @@ import type {
   NotificationView,
   Parser,
 } from "./types.js";
-import { DEFAULT_MAX_FANOUT, DEFAULT_PURGE_BATCH } from "../shared.js";
+import { DEFAULT_MAX_FANOUT, DEFAULT_PURGE_BATCH, MAX_FANOUT } from "../shared.js";
 
 /**
  * The component's raw notification view, before the client narrows opaque host
@@ -528,10 +553,20 @@ export class Notifications<TPayload = unknown> {
 
   constructor(
     private readonly component: NotificationsComponent,
-    options: NotificationsOptions<TPayload> = {},
+    ...[options]: unknown extends TPayload
+      ? [options?: NotificationsOptions<TPayload>]
+      : [
+          options: NotificationsOptions<TPayload> & {
+            payloadValidator: Parser<TPayload>;
+          },
+        ]
   ) {
-    this.payloadValidator = options.payloadValidator;
-    this.maxFanOut = options.maxFanOut ?? DEFAULT_MAX_FANOUT;
+    const resolvedOptions = options ?? {};
+    this.payloadValidator = resolvedOptions.payloadValidator;
+    this.maxFanOut = resolvedOptions.maxFanOut ?? DEFAULT_MAX_FANOUT;
+    if (!Number.isFinite(this.maxFanOut) || !Number.isInteger(this.maxFanOut) || this.maxFanOut < 1 || this.maxFanOut > MAX_FANOUT) {
+      throw new RangeError(`maxFanOut must be an integer between 1 and ${MAX_FANOUT}`);
+    }
   }
 
   /** Narrow an opaque value through a host parser; pass `undefined` and unset parsers through. */
@@ -639,7 +674,7 @@ export class Notifications<TPayload = unknown> {
 
   /**
    * Delete read notifications whose `createdAt < before` in bounded batches,
-   * oldest first. `before` defaults to the server clock; `batch` caps each pass
+   * oldest first. `before` defaults to the server clock minus 30 days; `batch` caps each pass
    * and the sweep self-reschedules until the read tail is clean. Returns the
    * count removed in the first pass. Unread notifications are never purged. The
    * built-in daily cron drives this automatically.
@@ -748,10 +783,24 @@ export const notificationView = v.object({
 ## src/component/mutations.ts
 
 ```ts
+import { DirectAggregate } from "@convex-dev/aggregate";
 import { ConvexError, v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, components } from "./_generated/api";
 import { mutation } from "./_generated/server";
+import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH } from "../shared";
 import { jsonValue } from "./validators";
+
+type UnreadAggregate = { Key: number; Id: string; Namespace: string };
+const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
+
+function validateBatch(batch: number): void {
+  if (!Number.isFinite(batch) || !Number.isInteger(batch) || batch < 1 || batch > MAX_PURGE_BATCH) {
+    throw new ConvexError({
+      code: "INVALID_BATCH",
+      message: `batch must be an integer between 1 and ${MAX_PURGE_BATCH}`,
+    });
+  }
+}
 
 /**
  * Deliver one notification to each of `subjectRefs` — the directed-inbox
@@ -778,6 +827,12 @@ export const deliver = mutation({
   },
   returns: v.object({ notificationIds: v.array(v.string()) }),
   handler: async (ctx, args) => {
+    if (!Number.isFinite(args.maxFanOut) || !Number.isInteger(args.maxFanOut) || args.maxFanOut < 1 || args.maxFanOut > MAX_FANOUT) {
+      throw new ConvexError({
+        code: "INVALID_MAX_FANOUT",
+        message: `maxFanOut must be an integer between 1 and ${MAX_FANOUT}`,
+      });
+    }
     if (args.subjectRefs.length === 0) {
       throw new ConvexError({
         code: "EMPTY_FANOUT",
@@ -802,6 +857,11 @@ export const deliver = mutation({
         payload: args.payload,
         read: false,
         createdAt: now,
+      });
+      await unreadAggregate.insert(ctx, {
+        namespace: subjectRef,
+        key: now,
+        id: notificationId,
       });
       notificationIds.push(notificationId);
     }
@@ -834,7 +894,12 @@ export const markRead = mutation({
     if (row.read) {
       return null;
     }
-    await ctx.db.patch(row._id, { read: true, readAt: Date.now() });
+    await unreadAggregate.delete(ctx, {
+      namespace: row.subjectRef,
+      key: row.createdAt,
+      id: row.notificationId,
+    });
+    await ctx.db.patch("notifications", row._id, { read: true, readAt: Date.now() });
     return null;
   },
 });
@@ -853,6 +918,7 @@ export const markAllRead = mutation({
   args: { subjectRef: v.string(), batch: v.number() },
   returns: v.number(),
   handler: async (ctx, args) => {
+    validateBatch(args.batch);
     const now = Date.now();
     const unread = await ctx.db
       .query("notifications")
@@ -862,7 +928,12 @@ export const markAllRead = mutation({
       .take(args.batch);
 
     for (const row of unread) {
-      await ctx.db.patch(row._id, { read: true, readAt: now });
+      await unreadAggregate.delete(ctx, {
+        namespace: row.subjectRef,
+        key: row.createdAt,
+        id: row.notificationId,
+      });
+      await ctx.db.patch("notifications", row._id, { read: true, readAt: now });
     }
 
     if (unread.length === args.batch) {
@@ -888,7 +959,11 @@ export const purge = mutation({
   args: { before: v.optional(v.number()), batch: v.number() },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const before = args.before ?? Date.now();
+    validateBatch(args.batch);
+    if (args.before !== undefined && !Number.isFinite(args.before)) {
+      throw new ConvexError({ code: "INVALID_BEFORE", message: "before must be finite" });
+    }
+    const before = args.before ?? Date.now() - DEFAULT_RETENTION_MS;
 
     const stale = await ctx.db
       .query("notifications")
@@ -898,7 +973,7 @@ export const purge = mutation({
       .take(args.batch);
 
     for (const row of stale) {
-      await ctx.db.delete(row._id);
+      await ctx.db.delete("notifications", row._id);
     }
     const removed = stale.length;
 
@@ -919,11 +994,16 @@ export const purge = mutation({
 ## src/component/queries.ts
 
 ```ts
+import { DirectAggregate } from "@convex-dev/aggregate";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import { notificationView } from "./validators";
 import type { Doc } from "./_generated/dataModel";
+
+type UnreadAggregate = { Key: number; Id: string; Namespace: string };
+const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
 
 /** Project a stored notification row to its public view (drops internal fields). */
 function view(row: Doc<"notifications">) {
@@ -999,24 +1079,15 @@ export const list = query({
 });
 
 /**
- * Count a subject's unread notifications via the `by_subject_read_created` index
- * (`read == false`). Subject-bounded — never counts another subject's rows. The
- * count walks the unread slice, so a host that expects very large unread inboxes
- * pairs this with `@convex-dev/aggregate`; for ordinary inboxes the index scan is
- * cheap.
+ * Count a subject's unread notifications in logarithmic time through the nested
+ * official aggregate component. The aggregate namespace is the opaque subjectRef,
+ * so one subject's count never spans another inbox.
  */
 export const unreadCount = query({
   args: { subjectRef: v.string() },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    const unread = await ctx.db
-      .query("notifications")
-      .withIndex("by_subject_read_created", (q) =>
-        q.eq("subjectRef", args.subjectRef).eq("read", false),
-      )
-      .collect();
-    return unread.length;
-  },
+  handler: (ctx, args) =>
+    unreadAggregate.count(ctx, { namespace: args.subjectRef }),
 });
 
 ```
@@ -1057,6 +1128,7 @@ export default crons;
 ## src/test.ts
 
 ```ts
+import aggregateTest from "@convex-dev/aggregate/test";
 import type { TestConvex } from "convex-test";
 import schema from "./component/schema";
 
@@ -1071,6 +1143,7 @@ export function register(
   name = "notifications",
 ): void {
   t.registerComponent(name, schema, modules);
+  t.registerComponent(`${name}/aggregate`, aggregateTest.schema, aggregateTest.modules);
 }
 
 ```

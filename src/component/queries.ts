@@ -1,8 +1,13 @@
+import { DirectAggregate } from "@convex-dev/aggregate";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import { notificationView } from "./validators";
 import type { Doc } from "./_generated/dataModel";
+
+type UnreadAggregate = { Key: number; Id: string; Namespace: string };
+const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
 
 /** Project a stored notification row to its public view (drops internal fields). */
 function view(row: Doc<"notifications">) {
@@ -78,22 +83,13 @@ export const list = query({
 });
 
 /**
- * Count a subject's unread notifications via the `by_subject_read_created` index
- * (`read == false`). Subject-bounded — never counts another subject's rows. The
- * count walks the unread slice, so a host that expects very large unread inboxes
- * pairs this with `@convex-dev/aggregate`; for ordinary inboxes the index scan is
- * cheap.
+ * Count a subject's unread notifications in logarithmic time through the nested
+ * official aggregate component. The aggregate namespace is the opaque subjectRef,
+ * so one subject's count never spans another inbox.
  */
 export const unreadCount = query({
   args: { subjectRef: v.string() },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    const unread = await ctx.db
-      .query("notifications")
-      .withIndex("by_subject_read_created", (q) =>
-        q.eq("subjectRef", args.subjectRef).eq("read", false),
-      )
-      .collect();
-    return unread.length;
-  },
+  handler: (ctx, args) =>
+    unreadAggregate.count(ctx, { namespace: args.subjectRef }),
 });
