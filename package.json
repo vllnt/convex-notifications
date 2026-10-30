@@ -57,16 +57,16 @@
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.5",
     "@vllnt/eslint-config": "2.0.0",
     "@vllnt/typescript": "2.0.0",
-    "convex": "^1.45.0",
-    "convex-test": "^0.0.56",
+    "convex": "^1.48.0",
+    "convex-test": "^0.0.65",
     "eslint": "^9.39.5",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.10",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "homepage": "https://github.com/vllnt/convex-notifications#readme",
   "bugs": {
@@ -99,6 +99,14 @@
     "notification-center"
   ],
   "dependencies": {
-    "@convex-dev/aggregate": "^0.3.0"
+    "@convex-dev/aggregate": "^0.3.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "handlebars@<4.7.10": "4.7.10",
+      "magic-string": "1.4.3",
+      "postcss": "8.5.31",
+      "rolldown": "1.2.15"
+    }
   }
 }

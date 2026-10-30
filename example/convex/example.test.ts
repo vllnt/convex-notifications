@@ -73,10 +73,12 @@ describe("notifications — deliver + read (the directed inbox)", () => {
     });
     const id = notificationIds[0];
     await t.mutation(api.example.markRead, { notificationId: id });
+    const first = await t.query(api.example.get, { notificationId: id });
     vi.setSystemTime(500);
     await t.mutation(api.example.markRead, { notificationId: id });
     const n = await t.query(api.example.get, { notificationId: id });
-    expect(n?.readAt).toBe(0); // second markRead was a no-op
+    expect(first?.readAt).toBeLessThan(500);
+    expect(n?.readAt).toBe(first?.readAt); // second markRead was a no-op
   });
 });
 
