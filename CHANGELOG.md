@@ -22,6 +22,10 @@ All notable changes to this project are documented here. The format is based on
   dedicated codegen script.
 - Refresh all direct dependencies to their latest compatible releases for canary validation.
 - Require `convex@^1.45.0` and update `convex-test` to `^0.0.56`.
+- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
+  `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
+- Pin `handlebars` to the patched 4.7.10 and hold `rolldown`, `magic-string` and `postcss`
+  at releases that satisfy the 7-day release-age policy, through `pnpm.overrides`.
 
 ## [0.1.0] - 2026-06-14
 
