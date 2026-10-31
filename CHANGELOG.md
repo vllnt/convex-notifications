@@ -4,7 +4,34 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - Unreleased
+
+### Added
+
+- `markRead(ctx, notificationId, { subjectRef })` and `get(ctx, notificationId, { subjectRef })`
+  accept an optional recipient. When passed, a notification addressed to a different recipient is
+  reported as `NOT_FOUND` / `null`, so a host forwarding the authenticated recipient can never
+  read or mark another recipient's notification by id. Omitting it keeps the previous
+  id-only behavior.
+- `INVALID_TYPE` and `INVALID_SUBJECT_REF` error codes.
+
+### Fixed
+
+- `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
+  `subjectRef`, instead of writing unaddressable rows.
+- `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
+  reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
+  `nodenext`.
+
+### Changed
+
+- Releases are tag-driven through `.github/workflows/publish.yml` (trusted publishing with
+  provenance); actions are pinned to commit SHAs and local publish scripts are removed.
+- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
+  `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
+- Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
+
+## [0.1.0] - 2026-09-01
 
 ### Fixed
 
@@ -20,14 +47,7 @@ All notable changes to this project are documented here. The format is based on
 
 - Treat Convex `_generated` output as CLI-owned, exclude it from formatting, and expose a
   dedicated codegen script.
-- Refresh all direct dependencies to their latest compatible releases for canary validation.
 - Require `convex@^1.45.0` and update `convex-test` to `^0.0.56`.
-- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
-  `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
-- Pin `handlebars` to the patched 4.7.10 and hold `rolldown`, `magic-string` and `postcss`
-  at releases that satisfy the 7-day release-age policy, through `pnpm.overrides`.
-
-## [0.1.0] - 2026-06-14
 
 ### Added
 

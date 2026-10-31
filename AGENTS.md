@@ -89,6 +89,10 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
 - **Subject-bounded reads (no footgun):** `list`/`unreadCount` are keyed on `subjectRef` in the index,
   so a read for one subject can never silently span another subject's inbox.
 
+- **Recipient-scoped id access:** `markRead` / `get` take an optional `subjectRef`; when the host passes
+  the authenticated recipient, an id addressed to anyone else is `NOT_FOUND` / `null`. The component
+  cannot read `ctx.auth`, so passing it is the host's job.
+
 - **Bounded fan-out (`maxFanOut`):** `deliver` rejects an empty set (`EMPTY_FANOUT`) and one over the
   client's cap (`FANOUT_TOO_LARGE`, default 256) so one mutation never amplifies past the transaction
   write budget; a host fanning out wider batches its own calls.

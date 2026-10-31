@@ -46,7 +46,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       markRead: FunctionReference<
         "mutation",
         "internal",
-        { notificationId: string },
+        { notificationId: string; subjectRef?: string },
         null,
         Name
       >;
@@ -62,7 +62,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       get: FunctionReference<
         "query",
         "internal",
-        { notificationId: string },
+        { notificationId: string; subjectRef?: string },
         null | {
           createdAt: number;
           notificationId: string;

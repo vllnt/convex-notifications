@@ -176,6 +176,66 @@ describe("notifications — adversarial", () => {
   });
 });
 
+describe("notifications — recipient scoping", () => {
+  test("markRead with another recipient's subjectRef is NOT_FOUND and leaves the row unread", async () => {
+    const t = setup();
+    const { notificationIds } = await t.mutation(api.example.deliverOne, {
+      subjectRef: "u1",
+      type: "t",
+    });
+    const id = notificationIds[0];
+    await expect(
+      t.mutation(api.example.markRead, { notificationId: id, subjectRef: "u2" }),
+    ).rejects.toThrow(/not found/);
+    expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(1);
+    expect((await t.query(api.example.get, { notificationId: id }))?.readAt).toBeUndefined();
+
+    await t.mutation(api.example.markRead, { notificationId: id, subjectRef: "u1" });
+    expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(0);
+  });
+
+  test("get with another recipient's subjectRef is null; the owner sees it", async () => {
+    const t = setup();
+    const { notificationIds } = await t.mutation(api.example.deliverOne, {
+      subjectRef: "u1",
+      type: "t",
+    });
+    const id = notificationIds[0];
+    expect(await t.query(api.example.get, { notificationId: id, subjectRef: "u2" })).toBeNull();
+    expect(
+      (await t.query(api.example.get, { notificationId: id, subjectRef: "u1" }))?.notificationId,
+    ).toBe(id);
+  });
+
+  test("markAllRead only touches the named recipient", async () => {
+    const t = setup();
+    await t.mutation(api.example.deliverOne, { subjectRef: "u1", type: "t" });
+    await t.mutation(api.example.deliverOne, { subjectRef: "u2", type: "t" });
+    expect(await t.mutation(api.example.markAllRead, { subjectRef: "u1" })).toBe(1);
+    expect(await t.query(api.example.unreadCount, { subjectRef: "u2" })).toBe(1);
+  });
+});
+
+describe("notifications — empty-string input", () => {
+  test("deliver rejects an empty type and an empty subjectRef without writing", async () => {
+    const t = setup();
+    await expect(
+      t.mutation(api.example.deliverOne, { subjectRef: "u1", type: "" }),
+    ).rejects.toThrow(/INVALID_TYPE/);
+    await expect(
+      t.mutation(api.example.deliver, { subjectRefs: ["u1", ""], type: "t" }),
+    ).rejects.toThrow(/INVALID_SUBJECT_REF/);
+    expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(0);
+  });
+
+  test("markAllRead rejects an empty subjectRef", async () => {
+    const t = setup();
+    await expect(
+      t.mutation(api.example.markAllRead, { subjectRef: "" }),
+    ).rejects.toThrow(/INVALID_SUBJECT_REF/);
+  });
+});
+
 describe("notifications — concurrency", () => {
   test("two readers marking the same notification yield a consistent read", async () => {
     const t = setup();

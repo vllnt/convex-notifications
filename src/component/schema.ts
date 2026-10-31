@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { jsonValue } from "./validators";
+import { jsonValue } from "./validators.js";
 
 /**
  * Sandboxed table — one subject's directed inbox. A notification is addressed at

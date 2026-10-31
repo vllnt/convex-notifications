@@ -49,7 +49,7 @@ export interface NotificationsComponent {
     markRead: FunctionReference<
       "mutation",
       "internal",
-      { notificationId: string },
+      { notificationId: string; subjectRef?: string },
       null
     >;
     markAllRead: FunctionReference<
@@ -69,7 +69,7 @@ export interface NotificationsComponent {
     get: FunctionReference<
       "query",
       "internal",
-      { notificationId: string },
+      { notificationId: string; subjectRef?: string },
       RawView | null
     >;
     list: FunctionReference<
@@ -195,10 +195,21 @@ export class Notifications<TPayload = unknown> {
     });
   }
 
-  /** Mark one notification read (idempotent). Rejects a missing id (`NOT_FOUND`). */
-  markRead(ctx: RunMutationCtx, notificationId: string): Promise<null> {
+  /**
+   * Mark one notification read (idempotent). Rejects a missing id (`NOT_FOUND`).
+   * Pass the authenticated recipient as `opts.subjectRef` so the component only
+   * marks a notification addressed to them; any other recipient's id is
+   * `NOT_FOUND`. Without it the id alone is trusted (the host must have
+   * authorized it).
+   */
+  markRead(
+    ctx: RunMutationCtx,
+    notificationId: string,
+    opts: { subjectRef?: string } = {},
+  ): Promise<null> {
     return ctx.runMutation(this.component.mutations.markRead, {
       notificationId,
+      subjectRef: opts.subjectRef,
     });
   }
 
@@ -218,13 +229,19 @@ export class Notifications<TPayload = unknown> {
     });
   }
 
-  /** The current notification for `notificationId`, or `null` if none is held. */
+  /**
+   * The current notification for `notificationId`, or `null` if none is held.
+   * With `opts.subjectRef`, a notification addressed to another recipient
+   * is also `null`.
+   */
   async get(
     ctx: RunQueryCtx,
     notificationId: string,
+    opts: { subjectRef?: string } = {},
   ): Promise<NotificationView<TPayload> | null> {
     const raw = await ctx.runQuery(this.component.queries.get, {
       notificationId,
+      subjectRef: opts.subjectRef,
     });
     return raw === null ? null : this.view(raw);
   }

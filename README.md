@@ -41,19 +41,20 @@ await inbox.markRead(ctx, notificationId);
 ## Installation
 
 ```bash
-pnpm add @vllnt/convex-notifications@canary convex@^1.45.0
+pnpm add @vllnt/convex-notifications convex@^1.45.0
 ```
 
-Peer dependency: `convex@^1.45.0`. This README follows `main` and the canary
-channel; `latest` is the separate stable release. Pin an exact canary version
-for reproducible installs.
+Peer dependency: `convex@^1.45.0`. Try unreleased changes from `main` with the
+`@canary` tag, pinned to an exact version.
 
 ## Quick start
 
 After mounting, run `pnpm exec convex dev` to generate
 `components.notifications`. These internal functions are for trusted server
 callers. Public wrappers must authorize recipients, derive identity, and verify
-ownership before reading or marking an id.
+ownership before reading or marking an id. Pass the authenticated recipient as
+`subjectRef` to `markRead` / `get` so the component itself refuses another
+recipient's id (`NOT_FOUND` / `null`); without it the id alone is trusted.
 
 ```ts
 // convex/convex.config.ts
@@ -105,9 +106,9 @@ export const myUnread = internalQuery({
 | Method                                         | Kind     | Result                                                           |
 | ---------------------------------------------- | -------- | ---------------------------------------------------------------- |
 | `deliver(ctx, subjects, type, payload?)`       | mutation | `{ notificationIds }` (`subjects`: one ref or an array)          |
-| `markRead(ctx, notificationId)`                | mutation | `null`                                                           |
+| `markRead(ctx, notificationId, opts?)`         | mutation | `null` (`opts`: `{ subjectRef? }` scopes to that recipient)      |
 | `markAllRead(ctx, subjectRef, opts?)`          | mutation | `number` (marked in the first bounded pass)                      |
-| `get(ctx, notificationId)`                     | query    | `NotificationView \| null`                                       |
+| `get(ctx, notificationId, opts?)`              | query    | `NotificationView \| null` (`opts`: `{ subjectRef? }`)           |
 | `list(ctx, subjectRef, paginationOpts, opts?)` | query    | `PaginationResult<NotificationView>` (`opts`: `{ unreadOnly? }`) |
 | `unreadCount(ctx, subjectRef)`                 | query    | `number`                                                         |
 | `purge(ctx, opts?)`                            | mutation | `number` (read notifications removed in the first bounded pass)  |
@@ -121,7 +122,8 @@ Full reference: [docs/API.md](docs/API.md).
   `Notifications<unknown>` permits unvalidated payloads.
 - `maxFanOut` defaults to 256 and must be an integer from 1–500 (invalid
   constructor values throw `RangeError`). Empty deliveries and over-cap
-  deliveries throw `EMPTY_FANOUT` and `FANOUT_TOO_LARGE`. Recipients are not
+  deliveries throw `EMPTY_FANOUT` and `FANOUT_TOO_LARGE`. Empty `type` or
+  `subjectRef` strings are rejected (`INVALID_TYPE`, `INVALID_SUBJECT_REF`). Recipients are not
   deduplicated; repeated delivery creates new rows.
 - `markAllRead` and `purge` accept batch sizes 1–500 (default 200) and return
   the first pass's count. Later passes run asynchronously.
@@ -161,6 +163,22 @@ pnpm test:coverage  # enforced 100% on covered files
 
 Tests run against the real component runtime via `convex-test`
 (`@edge-runtime/vm`), not mocks.
+
+### Testing your app
+
+`@vllnt/convex-notifications/test` exports `register(t, name = "notifications")`
+to mount the component in a `convex-test` instance. It needs `convex-test` and
+`vitest` (with Vite's `import.meta.glob`) in the consuming app:
+
+```ts
+/// <reference types="vite/client" />
+import { convexTest } from "convex-test";
+import { register } from "@vllnt/convex-notifications/test";
+import schema from "./schema";
+
+const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+register(t);
+```
 
 ## Documentation
 

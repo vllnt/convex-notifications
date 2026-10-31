@@ -97,9 +97,10 @@ export const deliverOne = mutation({
 });
 
 export const markRead = mutation({
-  args: { notificationId: v.string() },
+  args: { notificationId: v.string(), subjectRef: v.optional(v.string()) },
   returns: v.null(),
-  handler: (ctx, a) => inbox.markRead(ctx, a.notificationId),
+  handler: (ctx, a) =>
+    inbox.markRead(ctx, a.notificationId, { subjectRef: a.subjectRef }),
 });
 
 export const markAllRead = mutation({
@@ -109,9 +110,10 @@ export const markAllRead = mutation({
 });
 
 export const get = query({
-  args: { notificationId: v.string() },
+  args: { notificationId: v.string(), subjectRef: v.optional(v.string()) },
   returns: v.union(v.null(), notificationView),
-  handler: (ctx, a) => inbox.get(ctx, a.notificationId),
+  handler: (ctx, a) =>
+    inbox.get(ctx, a.notificationId, { subjectRef: a.subjectRef }),
 });
 
 export const list = query({
