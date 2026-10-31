@@ -100,10 +100,8 @@
   },
   "pnpm": {
     "overrides": {
-      "handlebars@<4.7.10": "4.7.10",
-      "magic-string": "1.4.3",
-      "postcss": "8.5.31",
-      "rolldown": "1.2.15"
+      "deepmerge-ts@<8.0.0": "8.0.2",
+      "handlebars@<4.7.10": "4.7.10"
     },
     "minimumReleaseAge": 10080,
     "minimumReleaseAgeExclude": [
