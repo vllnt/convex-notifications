@@ -1,6 +1,6 @@
 {
   "name": "@vllnt/convex-notifications",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Per-subject directed inbox — deliver notifications with read/unread state and fan-out as a Convex component",
   "license": "MIT",
   "type": "module",

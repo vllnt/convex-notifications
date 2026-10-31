@@ -41,12 +41,11 @@ await inbox.markRead(ctx, notificationId);
 ## Installation
 
 ```bash
-pnpm add @vllnt/convex-notifications@canary convex@^1.45.0
+pnpm add @vllnt/convex-notifications convex@^1.45.0
 ```
 
-Peer dependency: `convex@^1.45.0`. This README follows `main` and the canary
-channel; `latest` is the separate stable release. Pin an exact canary version
-for reproducible installs.
+Peer dependency: `convex@^1.45.0`. Try unreleased changes from `main` with the
+`@canary` tag, pinned to an exact version.
 
 ## Quick start
 
