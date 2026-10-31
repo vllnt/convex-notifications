@@ -1,9 +1,9 @@
 import { DirectAggregate } from "@convex-dev/aggregate";
 import { ConvexError, v } from "convex/values";
-import { api, components } from "./_generated/api";
-import { mutation } from "./_generated/server";
-import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH } from "../shared";
-import { jsonValue } from "./validators";
+import { api, components } from "./_generated/api.js";
+import { mutation } from "./_generated/server.js";
+import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH } from "../shared.js";
+import { jsonValue } from "./validators.js";
 
 type UnreadAggregate = { Key: number; Id: string; Namespace: string };
 const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
@@ -14,6 +14,12 @@ function validateBatch(batch: number): void {
       code: "INVALID_BATCH",
       message: `batch must be an integer between 1 and ${MAX_PURGE_BATCH}`,
     });
+  }
+}
+
+function requireText(value: string, code: string, name: string): void {
+  if (value === "") {
+    throw new ConvexError({ code, message: `${name} must be a non-empty string` });
   }
 }
 
@@ -29,6 +35,9 @@ function validateBatch(batch: number): void {
  * `ConvexError({ code: "EMPTY_FANOUT" })` and an over-cap list throws
  * `ConvexError({ code: "FANOUT_TOO_LARGE" })` so a runaway fan-out can never
  * silently amplify one mutation past the transaction write budget.
+ *
+ * Rejects an empty `type` (`INVALID_TYPE`) and any empty `subjectRef`
+ * (`INVALID_SUBJECT_REF`) before writing anything.
  *
  * @returns the minted `notificationId`s, one per recipient, in `subjectRefs`
  *   order.
@@ -61,6 +70,11 @@ export const deliver = mutation({
       });
     }
 
+    requireText(args.type, "INVALID_TYPE", "type");
+    for (const subjectRef of args.subjectRefs) {
+      requireText(subjectRef, "INVALID_SUBJECT_REF", "subjectRef");
+    }
+
     const now = Date.now();
     const notificationIds: string[] = [];
     for (const subjectRef of args.subjectRefs) {
@@ -89,18 +103,22 @@ export const deliver = mutation({
  * an already-read notification is a no-op (idempotent) so a double-tap or a
  * replayed client call never churns the timestamp.
  *
+ * Pass `subjectRef` to scope the mark to a recipient: a notification addressed
+ * to anyone else is treated as absent, so a host that forwards the caller's own
+ * `subjectRef` can never mark another recipient's notification by id.
+ *
  * @throws `ConvexError({ code: "NOT_FOUND" })` when no notification has
- *   `notificationId`.
+ *   `notificationId` (or, with `subjectRef`, none addressed to that recipient).
  */
 export const markRead = mutation({
-  args: { notificationId: v.string() },
+  args: { notificationId: v.string(), subjectRef: v.optional(v.string()) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const row = await ctx.db
       .query("notifications")
       .withIndex("by_notification_id", (q) => q.eq("notificationId", args.notificationId))
       .unique();
-    if (row === null) {
+    if (row === null || (args.subjectRef !== undefined && row.subjectRef !== args.subjectRef)) {
       throw new ConvexError({
         code: "NOT_FOUND",
         message: `notification "${args.notificationId}" not found`,
@@ -134,6 +152,7 @@ export const markAllRead = mutation({
   returns: v.number(),
   handler: async (ctx, args) => {
     validateBatch(args.batch);
+    requireText(args.subjectRef, "INVALID_SUBJECT_REF", "subjectRef");
     const now = Date.now();
     const unread = await ctx.db
       .query("notifications")

@@ -58,17 +58,23 @@ multiple rows; the cap counts array entries. Invalid `maxFanOut` at construction
 throws a plain `RangeError`; direct component calls are checked with coded
 `INVALID_MAX_FANOUT`.
 
-### `markRead(ctx, notificationId) → null`
+### `markRead(ctx, notificationId, opts?) → null`
+
+`opts`: `{ subjectRef?: string }`.
 
 Mark one notification read, stamping `readAt` from the server clock. Idempotent
 — re-marking a read notification is a no-op. A missing id throws
-`ConvexError({ code: "NOT_FOUND" })`.
+`ConvexError({ code: "NOT_FOUND" })`. A component function cannot read
+`ctx.auth`, so recipient ownership is the host's job: resolve the caller's
+identity and pass it as `opts.subjectRef`. A notification addressed to a
+different recipient is then reported as `NOT_FOUND` (indistinguishable from a
+missing id) and stays unread. Without `subjectRef` the id alone is trusted.
 
 ### `markAllRead(ctx, subjectRef, opts?) → number`
 
 `opts`: `{ batch?: number }` (default `batch = 200`, valid integer range 1–500).
 
-Mark every unread notification for `subjectRef` read, oldest first, sharing one
+Mark every unread notification for `subjectRef` (non-empty) read, oldest first, sharing one
 server-clock `readAt`. Returns the count marked in the first pass. If a full
 batch was marked the sweep self-reschedules through the component scheduler
 until the unread tail is clean. Idempotent — an already-empty unread inbox marks
@@ -88,9 +94,12 @@ only for an extra or custom-cadence sweep.
 
 ## Queries
 
-### `get(ctx, notificationId) → NotificationView | null`
+### `get(ctx, notificationId, opts?) → NotificationView | null`
 
-The current notification for `notificationId`, or `null` if none is held.
+`opts`: `{ subjectRef?: string }`.
+
+The current notification for `notificationId`, or `null` if none is held. With
+`opts.subjectRef`, a notification addressed to another recipient is also `null`.
 `NotificationView` is
 `{ notificationId, subjectRef, type, payload?, readAt?, createdAt }`; `payload`
 is narrowed by the host validator when set; `readAt` is absent while unread.
@@ -121,9 +130,11 @@ Coded `ConvexError`s thrown by the component (`error.data.code`):
 | `EMPTY_FANOUT`       | `deliver`              | The recipient set was empty.                         |
 | `FANOUT_TOO_LARGE`   | `deliver`              | The recipient set exceeded the client's `maxFanOut`. |
 | `INVALID_MAX_FANOUT` | `deliver`              | `maxFanOut` was not an integer from 1–500.           |
+| `INVALID_TYPE`       | `deliver`              | `type` was an empty string.                          |
+| `INVALID_SUBJECT_REF`| `deliver`, `markAllRead` | A `subjectRef` was an empty string.                |
 | `INVALID_BATCH`      | `markAllRead`, `purge` | `batch` was not an integer from 1–500.               |
 | `INVALID_BEFORE`     | `purge`                | The cutoff must be finite.                           |
-| `NOT_FOUND`          | `markRead`             | No notification has this `notificationId`.           |
+| `NOT_FOUND`          | `markRead`             | No notification has this `notificationId` (for the given `subjectRef`, if passed). |
 
 ## Cron / Maintenance
 

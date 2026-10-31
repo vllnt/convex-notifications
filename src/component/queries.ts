@@ -1,10 +1,10 @@
 import { DirectAggregate } from "@convex-dev/aggregate";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { components } from "./_generated/api";
-import { query } from "./_generated/server";
-import { notificationView } from "./validators";
-import type { Doc } from "./_generated/dataModel";
+import { components } from "./_generated/api.js";
+import { query } from "./_generated/server.js";
+import { notificationView } from "./validators.js";
+import type { Doc } from "./_generated/dataModel.js";
 
 type UnreadAggregate = { Key: number; Id: string; Namespace: string };
 const unreadAggregate = new DirectAggregate<UnreadAggregate>(components.aggregate as never);
@@ -21,16 +21,23 @@ function view(row: Doc<"notifications">) {
   };
 }
 
-/** The current notification for `notificationId`, or `null` if none is held. */
+/**
+ * The current notification for `notificationId`, or `null` if none is held.
+ * With `subjectRef`, a notification addressed to a different recipient is
+ * reported as `null`, never returned.
+ */
 export const get = query({
-  args: { notificationId: v.string() },
+  args: { notificationId: v.string(), subjectRef: v.optional(v.string()) },
   returns: v.union(v.null(), notificationView),
   handler: async (ctx, args) => {
     const row = await ctx.db
       .query("notifications")
       .withIndex("by_notification_id", (q) => q.eq("notificationId", args.notificationId))
       .unique();
-    return row === null ? null : view(row);
+    if (row === null || (args.subjectRef !== undefined && row.subjectRef !== args.subjectRef)) {
+      return null;
+    }
+    return view(row);
   },
 });
 
