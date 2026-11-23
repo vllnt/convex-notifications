@@ -130,8 +130,8 @@ Coded `ConvexError`s thrown by the component (`error.data.code`):
 | `EMPTY_FANOUT`       | `deliver`              | The recipient set was empty.                         |
 | `FANOUT_TOO_LARGE`   | `deliver`              | The recipient set exceeded the client's `maxFanOut`. |
 | `INVALID_MAX_FANOUT` | `deliver`              | `maxFanOut` was not an integer from 1–500.           |
-| `INVALID_TYPE`       | `deliver`              | `type` was an empty string.                          |
-| `INVALID_SUBJECT_REF`| `deliver`, `markAllRead` | A `subjectRef` was an empty string.                |
+| `INVALID_TYPE`       | `deliver`              | `type` was an empty string or over 512 characters.   |
+| `INVALID_SUBJECT_REF`| `deliver`, `markAllRead` | A `subjectRef` was an empty string or over 512 characters. |
 | `INVALID_BATCH`      | `markAllRead`, `purge` | `batch` was not an integer from 1–500.               |
 | `INVALID_BEFORE`     | `purge`                | The cutoff must be finite.                           |
 | `NOT_FOUND`          | `markRead`             | No notification has this `notificationId` (for the given `subjectRef`, if passed). |

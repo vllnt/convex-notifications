@@ -17,6 +17,9 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
+- `deliver` rejects a `type` over 512 characters with `INVALID_TYPE`, and `deliver` and
+  `markAllRead` reject a `subjectRef` over 512 characters with `INVALID_SUBJECT_REF`, so
+  oversized refs never reach storage, the inbox indexes or the unread aggregate.
 - `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
   `subjectRef`, instead of writing unaddressable rows.
 - `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and

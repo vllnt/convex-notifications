@@ -4,6 +4,7 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { register } from "../../src/test";
 import { Notifications } from "../../src/client";
+import { MAX_REF_LENGTH } from "../../src/shared";
 import crons, {
   PURGE_BATCH,
   PURGE_INTERVAL,
@@ -226,6 +227,24 @@ describe("notifications — empty-string input", () => {
       t.mutation(api.example.deliver, { subjectRefs: ["u1", ""], type: "t" }),
     ).rejects.toThrow(/INVALID_SUBJECT_REF/);
     expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(0);
+  });
+
+  test("deliver and markAllRead reject a type or subjectRef over the length cap", async () => {
+    const t = setup();
+    const long = "x".repeat(MAX_REF_LENGTH + 1);
+    await expect(
+      t.mutation(api.example.deliverOne, { subjectRef: "u1", type: long }),
+    ).rejects.toThrow(/INVALID_TYPE/);
+    await expect(
+      t.mutation(api.example.deliver, { subjectRefs: ["u1", long], type: "t" }),
+    ).rejects.toThrow(/INVALID_SUBJECT_REF/);
+    await expect(
+      t.mutation(api.example.markAllRead, { subjectRef: long }),
+    ).rejects.toThrow(/INVALID_SUBJECT_REF/);
+    expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(0);
+    const max = "x".repeat(MAX_REF_LENGTH);
+    await t.mutation(api.example.deliverOne, { subjectRef: max, type: max });
+    expect(await t.query(api.example.unreadCount, { subjectRef: max })).toBe(1);
   });
 
   test("markAllRead rejects an empty subjectRef", async () => {
