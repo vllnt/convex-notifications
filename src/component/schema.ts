@@ -13,7 +13,8 @@ import { jsonValue } from "./validators.js";
  * - `by_notification_id` — direct lookup / markRead by the minted `notificationId`.
  * - `by_subject_created` — list a subject's whole inbox, newest first.
  * - `by_subject_read_created` — list unread (or read) for a subject, newest
- *   first, and count unread — the unread inbox is `read == false` on this index.
+ *   first — the unread inbox is `read == false` on this index. (`unreadCount`
+ *   uses the nested aggregate component, not this index.)
  * - `by_read_created` — global retention sweep: read rows past a `createdAt`
  *   cutoff, oldest first, across all subjects (the purge cron is not
  *   subject-bounded).

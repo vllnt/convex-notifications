@@ -131,6 +131,7 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
 | Error codes | `docs/API.md` → `## Error codes` table |
 | `peerDependencies.convex` version | `llms.txt` context line (`convex@^X.Y.Z`), `docs/API.md` Compatibility line, README Installation peer note |
 | Read-state / inbox semantics | `docs/API.md` mutation/query sections, Key design decisions above |
+| Files shipped in the npm tarball (`package.json` `files`) | `scripts/package-contents.test.mjs` required list, the README / `llms.txt` "For coding agents" notes, `publish.yml` push paths |
 | Any change | `pnpm generate:llms` to validate the `llms.txt` heading and links |
 
 Grep old values before committing (e.g. after a `peerDependencies.convex` bump, `git grep "1.41.0"` → only the new range survives).
