@@ -194,7 +194,7 @@ register(t);
 local links without generating a source bundle.
 
 [API reference](docs/API.md) · [LLM index](llms.txt) ·
-[Security policy](SECURITY.md)
+[Security policy](https://github.com/vllnt/convex-notifications/blob/main/SECURITY.md)
 
 ## Related packages
 
@@ -214,7 +214,7 @@ local links without generating a source bundle.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/vllnt/convex-notifications/blob/main/CONTRIBUTING.md).
 
 ## Author
 

@@ -13,7 +13,7 @@ The npm package bundles these docs at `node_modules/@vllnt/convex-notifications/
 
 ## Docs
 
-- [README](./README.md): Project overview, installation, usage examples, architecture
+- [README](./README.md): Project overview, installation, usage examples, options and limitations
 - [API Reference](./docs/API.md): Package entry points, public class methods, return shapes, error codes, cron
 - [Changelog](./CHANGELOG.md): Version history and release notes
 - [Contributing](https://github.com/vllnt/convex-notifications/blob/main/CONTRIBUTING.md): Development setup, validation commands, release workflow (repository only)
@@ -30,6 +30,6 @@ The npm package bundles these docs at `node_modules/@vllnt/convex-notifications/
 ## Optional
 
 - [AGENTS](https://github.com/vllnt/convex-notifications/blob/main/AGENTS.md): Agent instructions for contributors to this repository (repository only)
-- [Security Policy](https://github.com/vllnt/convex-notifications/blob/main/SECURITY.md): Vulnerability reporting policy
-- [Code of Conduct](https://github.com/vllnt/convex-notifications/blob/main/CODE_OF_CONDUCT.md): Community participation guidelines
+- [Security Policy](https://github.com/vllnt/convex-notifications/blob/main/SECURITY.md): Vulnerability reporting policy (repository only)
+- [Code of Conduct](https://github.com/vllnt/convex-notifications/blob/main/CODE_OF_CONDUCT.md): Community participation guidelines (repository only)
 - [License](./LICENSE): MIT license

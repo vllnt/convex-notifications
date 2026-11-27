@@ -43,8 +43,9 @@ export interface NotificationsOptions<TPayload> {
    */
   payloadValidator?: Parser<TPayload>;
   /**
-   * Hard cap on a single `deliver` fan-out's recipient count. Defaults to
-   * `DEFAULT_MAX_FANOUT` (256); bounds the write amplification of one mutation.
+   * Hard cap on a single `deliver` fan-out's recipient count. Defaults to 256;
+   * must be an integer from 1 to 500, or the constructor throws a `RangeError`.
+   * Bounds the write amplification of one mutation.
    */
   maxFanOut?: number;
 }

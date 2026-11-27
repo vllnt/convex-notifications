@@ -184,9 +184,9 @@ export const markAllRead = mutation({
  * Delete up to `batch` **read** notifications whose `createdAt < before`, oldest
  * first across all subjects via the `by_read_created` index. `before` defaults
  * to the server clock minus the 30-day retention window when omitted. Unread
- * notifications are never purged. If a
- * full batch was removed there may be more, so the sweep self-reschedules through
- * `ctx.scheduler` until the read tail is clean. Idempotent — only ever removes
+ * notifications are never purged. If a full batch was removed there may be more,
+ * so the sweep self-reschedules through `ctx.scheduler` until the read tail is
+ * clean. Idempotent — only ever removes
  * already-read, past-retention rows. The built-in daily cron drives this
  * automatically.
  */

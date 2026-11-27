@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 const [report] = JSON.parse(
   execFileSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"],
+    stdio: ["ignore", "pipe", "pipe"],
   }),
 );
 const packed = new Set(report.files.map((file) => file.path));

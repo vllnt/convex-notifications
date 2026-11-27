@@ -34,8 +34,8 @@ All notable changes to this project are documented here. The format is based on
 - Every push to `main` that touches the package or its shipped docs publishes a `canary`
   build; the repository-variable gate on canary publishing is removed.
 - `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
-- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
-  `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
+- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3.8,
+  `convex-test` 0.0.71, `convex` 1.50, `prettier` 3.10.1) and `@convex-dev/aggregate` to 0.3.4.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
 
 ## [0.1.0] - 2026-09-01
