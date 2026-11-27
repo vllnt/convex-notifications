@@ -47,6 +47,13 @@ pnpm add @vllnt/convex-notifications convex@^1.45.0
 Peer dependency: `convex@^1.45.0`. Try unreleased changes from `main` with the
 `@canary` tag, pinned to an exact version.
 
+### For coding agents
+
+The package bundles its docs at `node_modules/@vllnt/convex-notifications/`:
+`README.md`, `docs/API.md`, `CHANGELOG.md`, and `llms.txt`, next to the `src/`
+and `dist/` they describe. They match the installed version. Read them before
+writing code against this package.
+
 ## Quick start
 
 After mounting, run `pnpm exec convex dev` to generate
@@ -182,11 +189,28 @@ register(t);
 
 ## Documentation
 
-`llms.txt` is the maintained discovery index. `pnpm generate:llms` checks its
-heading and local links without generating a source bundle.
+`llms.txt` is the maintained discovery index and ships in the npm package with
+`docs/API.md` and `CHANGELOG.md`. `pnpm generate:llms` checks its heading and
+local links without generating a source bundle.
 
 [API reference](docs/API.md) · [LLM index](llms.txt) ·
 [Security policy](SECURITY.md)
+
+## Related packages
+
+- [`@vllnt/convex-events`](https://oss.vllnt.com/packages/convex-events) — an
+  append-only per-subject activity feed and event ledger, read back as history
+  (pull, no read state). Use it for "what happened on this subject"; use this
+  package for "what this recipient still has to read".
+- [`@vllnt/convex-email`](https://oss.vllnt.com/packages/convex-email) — a
+  durable outbound email queue. This package stores the inbox only; the host
+  sends the email copy of a notification through `@vllnt/convex-email`.
+- [`@vllnt/convex-idempotency`](https://oss.vllnt.com/packages/convex-idempotency)
+  — an idempotency key ledger. `deliver` is not idempotent, so an
+  at-least-once producer gates it with a key.
+- [`@vllnt/convex-comments`](https://oss.vllnt.com/packages/convex-comments) —
+  threaded comments on any resource. It stores the thread; the host calls
+  `deliver` to tell participants about a reply.
 
 ## Contributing
 
@@ -197,11 +221,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Built by [bntvllnt](https://github.com/bntvllnt) ·
 [bntvllnt.com](https://bntvllnt.com) · [X @bntvllnt](https://x.com/bntvllnt)
 
-Part of the [@vllnt](https://github.com/vllnt) Convex component fleet —
-[vllnt.com](https://vllnt.com)
-
 If this is useful, [sponsor the work](https://github.com/sponsors/bntvllnt).
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+Part of vllnt oss: https://oss.vllnt.com

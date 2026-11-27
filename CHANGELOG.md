@@ -14,6 +14,10 @@ All notable changes to this project are documented here. The format is based on
   read or mark another recipient's notification by id. Omitting it keeps the previous
   id-only behavior.
 - `INVALID_TYPE` and `INVALID_SUBJECT_REF` error codes.
+- The npm package ships `docs/API.md`, `CHANGELOG.md` and `llms.txt`, so coding agents can read
+  docs that match the installed version under `node_modules/@vllnt/convex-notifications/`.
+  `llms.txt` links shipped files relatively, and a test fails CI when one is missing from the
+  tarball.
 
 ### Fixed
 
@@ -27,6 +31,9 @@ All notable changes to this project are documented here. The format is based on
 
 - Releases are tag-driven through `.github/workflows/publish.yml` (trusted publishing with
   provenance); actions are pinned to commit SHAs and local publish scripts are removed.
+- Every push to `main` that touches the package or its shipped docs publishes a `canary`
+  build; the repository-variable gate on canary publishing is removed.
+- `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
 - Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
   `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.

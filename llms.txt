@@ -5,23 +5,31 @@
 `@vllnt/convex-notifications` is a publishable Convex component. It targets `convex@^1.45.0`.
 It stores one sandboxed table - `notifications` (a component-minted `notificationId`, the opaque recipient `subjectRef`, a host `type` tag, opaque host `payload`, a derived `read` boolean + `readAt` timestamp, and a `createdAt` server timestamp). A host mutation calls `deliver(subjectRef | subjectRefs[], type, payload?)` to fan one notification out to each recipient (unread, one minted id per row) and gets the ids back; a recipient's UI calls `list(subjectRef, paginationOpts, { unreadOnly? })` to page the inbox newest-first, `unreadCount(subjectRef)` for the unread total, `get(notificationId)` for one, `markRead(notificationId)` (idempotent) and `markAllRead(subjectRef)` (bounded, self-rescheduling) to clear read state - all reactive in Convex. Reads are subject-bounded - a `list`/`unreadCount` never spans another subject's inbox. Time is read from the server clock inside every handler - no caller-supplied clock. A bounded, self-rescheduling `purge` (and a built-in daily cron) removes only read notifications past a retention window; unread are never purged. This is a directed inbox (push, with read state), distinct from an activity feed (an actor's own pull timeline); channel fan-out (email/push) stays in the host. The host owns the recipient, auth, and the `payload` type (the client is generic over it, with a `payloadValidator` parser required for typed payloads, optional only for unknown payloads, narrowing the opaque stored value at the boundary - never a `v.any()` dump); the component owns only the inbox. Mount-safe: it runs correctly under multiple named `app.use` mounts.
 
-Documentation follows main/canary, not necessarily npm latest. Use `paginationOptsValidator` for host pagination args. `maxFanOut` defaults to 256 (integer 1–500); invalid constructor values throw RangeError. Empty/over-cap delivery throws EMPTY_FANOUT/FANOUT_TOO_LARGE; empty type/subjectRef throw INVALID_TYPE/INVALID_SUBJECT_REF; markRead/get accept an optional `subjectRef` that scopes the id to one recipient (NOT_FOUND / null otherwise); duplicates and retries create additional rows. Unread counts use the nested official aggregate component. Views expose readAt, not the stored read boolean. Purge uses createdAt with 30-day default retention, never purges unread rows, and validates finite cutoffs and batch 1–500 (INVALID_BEFORE/INVALID_BATCH).
+Use `paginationOptsValidator` for host pagination args. `maxFanOut` defaults to 256 (integer 1–500); invalid constructor values throw RangeError. Empty/over-cap delivery throws EMPTY_FANOUT/FANOUT_TOO_LARGE; empty type/subjectRef throw INVALID_TYPE/INVALID_SUBJECT_REF; markRead/get accept an optional `subjectRef` that scopes the id to one recipient (NOT_FOUND / null otherwise); duplicates and retries create additional rows. Unread counts use the nested official aggregate component. Views expose readAt, not the stored read boolean. Purge uses createdAt with 30-day default retention, never purges unread rows, and validates finite cutoffs and batch 1–500 (INVALID_BEFORE/INVALID_BATCH).
+
+## For coding agents
+
+The npm package bundles these docs at `node_modules/@vllnt/convex-notifications/` (`README.md`, `docs/API.md`, `CHANGELOG.md`, `llms.txt`), next to the `src/` and `dist/` they describe. They match the installed version. Read them before writing code against this package.
 
 ## Docs
 
-- [README](README.md): Project overview, installation, usage examples, architecture
-- [API Reference](docs/API.md): Public class methods, return shapes, error codes, cron
-- [Changelog](CHANGELOG.md): Version history and release notes
-- [Contributing](CONTRIBUTING.md): Development setup, validation commands, release workflow
+- [README](./README.md): Project overview, installation, usage examples, architecture
+- [API Reference](./docs/API.md): Package entry points, public class methods, return shapes, error codes, cron
+- [Changelog](./CHANGELOG.md): Version history and release notes
+- [Contributing](https://github.com/vllnt/convex-notifications/blob/main/CONTRIBUTING.md): Development setup, validation commands, release workflow (repository only)
 
 ## Examples
 
-- [Example component wrapper](example/convex/example.ts): Host-app wrapper functions
-- [Example tests](example/convex/example.test.ts): End-to-end usage coverage with `convex-test`
+- [Example component wrapper](https://github.com/vllnt/convex-notifications/blob/main/example/convex/example.ts): Host-app wrapper functions (repository only)
+- [Example tests](https://github.com/vllnt/convex-notifications/blob/main/example/convex/example.test.ts): End-to-end usage coverage with `convex-test` (repository only)
+
+## Ecosystem
+
+- [vllnt oss](https://oss.vllnt.com/llms.txt): Index of the other vllnt open-source packages
 
 ## Optional
 
-- [AGENTS](AGENTS.md): Canonical agent instructions for this repository
-- [Security Policy](SECURITY.md): Vulnerability reporting policy
-- [Code of Conduct](CODE_OF_CONDUCT.md): Community participation guidelines
-- [License](LICENSE): MIT license
+- [AGENTS](https://github.com/vllnt/convex-notifications/blob/main/AGENTS.md): Agent instructions for contributors to this repository (repository only)
+- [Security Policy](https://github.com/vllnt/convex-notifications/blob/main/SECURITY.md): Vulnerability reporting policy
+- [Code of Conduct](https://github.com/vllnt/convex-notifications/blob/main/CODE_OF_CONDUCT.md): Community participation guidelines
+- [License](./LICENSE): MIT license

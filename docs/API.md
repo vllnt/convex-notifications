@@ -2,6 +2,23 @@
 
 **Compatibility:** `convex@^1.45.0`
 
+This file ships in the npm package at
+`node_modules/@vllnt/convex-notifications/docs/API.md` and matches the
+installed version.
+
+## Package entry points
+
+| Import path                                        | Exports                                                                                                   |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `@vllnt/convex-notifications`                      | class `Notifications`; types `NotificationsComponent`, `NotificationsOptions`, `NotificationView`, `ListOptions`, `Parser` |
+| `@vllnt/convex-notifications/convex.config`        | the component definition (default export) for `app.use(...)`; also `./convex.config.js`                  |
+| `@vllnt/convex-notifications/test`                 | `register(t, name = "notifications")` — mounts the component (and its nested aggregate) in `convex-test` |
+| `@vllnt/convex-notifications/_generated/component` | type-only `ComponentApi` for the mounted component; also `./_generated/component.js`                    |
+
+The package depends on `@convex-dev/aggregate` (nested inside the component for
+`unreadCount`). `./test` ships as TypeScript source and needs `convex-test` and
+`vitest` (Vite's `import.meta.glob`) in the consuming app.
+
 Construct the client with the mounted component and optional host config:
 
 ```ts
@@ -24,8 +41,11 @@ const inbox = new Notifications<{ actor: string }>(components.notifications, {
 ```
 
 `Notifications<TPayload = unknown>` is generic over the host's opaque `payload`
-type. All methods take the host `ctx` (a query or mutation context) as the first
-argument.
+type. `payloadValidator` is a `Parser<TPayload>`: a plain function
+`(value: unknown) => TPayload` that returns the narrowed value or throws.
+Convex `v.*` validators have no `.parse` method, so write the parser by hand
+(as above) or use a schema library's parse function. All methods take the host
+`ctx` (a query or mutation context) as the first argument.
 
 **Time is server-sourced.** Every handler stamps `createdAt`/`readAt` from
 `Date.now()` itself; no method accepts a caller-supplied clock.
@@ -112,7 +132,8 @@ Page a subject's inbox, newest first. With `unreadOnly`, only unread
 notifications are returned (via the `by_subject_read_created` index,
 `read == false`); otherwise the whole inbox via `by_subject_created`. Takes the
 standard Convex `paginationOpts` and returns the standard paginated envelope
-(`page`, `isDone`, `continueCursor`) with each row narrowed to the typed view.
+(`page`, `isDone`, `continueCursor`, plus optional `splitCursor` /
+`pageStatus`) with each row narrowed to the typed view.
 **Subject-bounded** — never returns another subject's rows.
 
 ### `unreadCount(ctx, subjectRef) → number`

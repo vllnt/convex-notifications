@@ -8,8 +8,12 @@
   "files": [
     "dist",
     "src",
+    "docs/API.md",
+    "CHANGELOG.md",
+    "llms.txt",
     "!src/**/*.test.*",
-    "!src/**/*.spec.*"],
+    "!src/**/*.spec.*"
+  ],
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -66,7 +70,7 @@
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
   },
-  "homepage": "https://github.com/vllnt/convex-notifications#readme",
+  "homepage": "https://oss.vllnt.com/packages/convex-notifications",
   "bugs": {
     "url": "https://github.com/vllnt/convex-notifications/issues"
   },
@@ -94,7 +98,10 @@
     "convex-component",
     "notifications",
     "inbox",
-    "notification-center"
+    "notification-center",
+    "unread-count",
+    "read-state",
+    "fan-out"
   ],
   "dependencies": {
     "@convex-dev/aggregate": "^0.3.4"

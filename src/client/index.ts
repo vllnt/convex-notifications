@@ -120,7 +120,12 @@ interface RunMutationCtx {
  * @example
  * ```ts
  * const inbox = new Notifications(components.notifications, {
- *   payloadValidator: v.object({ actor: v.string() }).parse,
+ *   payloadValidator: (value) => {
+ *     if (typeof value !== "object" || value === null || !("actor" in value) || typeof value.actor !== "string") {
+ *       throw new Error("Expected an actor string");
+ *     }
+ *     return { actor: value.actor };
+ *   },
  * });
  * const { notificationIds } = await inbox.deliver(ctx, ["u1", "u2"], "mention", { actor: "u9" });
  * const count = await inbox.unreadCount(ctx, "u1");          // 1
