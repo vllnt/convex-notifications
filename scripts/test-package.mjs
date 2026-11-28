@@ -113,13 +113,20 @@ export { config, configJs };
   tsc("--module", "NodeNext", "--moduleResolution", "NodeNext", "--types", "vite/client", ...files);
 
   // The docs contract on what consumers receive, then the README examples in a
-  // stub Convex host: type-checked with both compilers, and its test example
-  // run with the README's own vitest.config.mts. `--skipLibCheck` as in a
-  // Convex app's tsconfig: vite's node typings need @types/node; the entry
-  // points above are checked without it.
-  const examples = await checkDocumentation(installed, temporary);
+  // stub Convex host: type-checked with both compilers and module resolutions,
+  // and its test example run with the README's own vitest.config.mts.
+  // `--skipLibCheck`, as in a Convex app's tsconfig: the `vitest` and
+  // `vitest/config` typings need @types/node, which a host need not install.
+  // It skips only `.d.ts` files: the README files and the shipped `./test`
+  // source are still checked, and the entry points above are checked without it.
+  // DOCS_LINKS=offline (the publish gate) skips fetching external links, so a
+  // linked site's outage cannot block a release; CI still fetches them.
+  const network = process.env.DOCS_LINKS !== "offline";
+  if (!network) console.log("SKIP  external links not fetched (DOCS_LINKS=offline); CI checks them");
+  const examples = await checkDocumentation(installed, temporary, { network });
   const hostFiles = writeHost(temporary, convexHost(installed, examples), examples);
   tsc("--module", "ESNext", "--moduleResolution", "Bundler", "--types", "vite/client", "--skipLibCheck", ...hostFiles);
+  tsc("--module", "NodeNext", "--moduleResolution", "NodeNext", "--types", "vite/client", "--skipLibCheck", ...hostFiles);
   run("pnpm", ["exec", "vitest", "run"]);
   console.log(`OK    ${name}: tarball installs, type-checks and runs on convex@1.45.0`);
 } finally {

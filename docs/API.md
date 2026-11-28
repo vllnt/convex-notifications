@@ -23,6 +23,7 @@ clock inside the handler; no method accepts a caller time.
 ### `Notifications`
 
 ```ts
+// Signature:
 new Notifications<TPayload = unknown>(
   component: NotificationsComponent,
   options?: NotificationsOptions<TPayload>,
@@ -40,6 +41,7 @@ context); query methods need one with `runQuery`.
 ### `deliver`
 
 ```ts
+// Signature:
 deliver(ctx, subjects: string | string[], type: string, payload?: TPayload): Promise<{ notificationIds: string[] }>
 ```
 
@@ -58,6 +60,7 @@ component call can get wrong.
 ### `markRead`
 
 ```ts
+// Signature:
 markRead(ctx, notificationId: string, opts?: { subjectRef?: string }): Promise<null>
 ```
 
@@ -70,6 +73,7 @@ notification is addressed to a different recipient (it stays unread). Without
 ### `markAllRead`
 
 ```ts
+// Signature:
 markAllRead(ctx, subjectRef: string, opts?: { batch?: number }): Promise<number>
 ```
 
@@ -82,6 +86,7 @@ marked by this call's batch only. Throws `INVALID_BATCH` and, for
 ### `get`
 
 ```ts
+// Signature:
 get(ctx, notificationId: string, opts?: { subjectRef?: string }): Promise<NotificationView<TPayload> | null>
 ```
 
@@ -92,6 +97,7 @@ goes through `payloadValidator` when one is set.
 ### `list`
 
 ```ts
+// Signature:
 list(ctx, subjectRef: string, paginationOpts: PaginationOptions, opts?: ListOptions): Promise<PaginationResult<NotificationView<TPayload>>>
 ```
 
@@ -106,6 +112,7 @@ One page of the recipient's notifications, newest first (by `createdAt`). With
 ### `unreadCount`
 
 ```ts
+// Signature:
 unreadCount(ctx, subjectRef: string): Promise<number>
 ```
 
@@ -116,6 +123,7 @@ The number of unread notifications for the recipient. It is kept in the nested
 ### `purge`
 
 ```ts
+// Signature:
 purge(ctx, opts?: { before?: number; batch?: number }): Promise<number>
 ```
 
@@ -140,6 +148,7 @@ The type of `components.notifications`: the component's `mutations` (`deliver`,
 ### `NotificationsOptions`
 
 ```ts
+// Signature:
 interface NotificationsOptions<TPayload> {
   payloadValidator?: Parser<TPayload>;
   maxFanOut?: number;
@@ -152,6 +161,7 @@ interface NotificationsOptions<TPayload> {
 ### `NotificationView`
 
 ```ts
+// Signature:
 interface NotificationView<TPayload = unknown> {
   notificationId: string;
   subjectRef: string;
@@ -167,6 +177,7 @@ interface NotificationView<TPayload = unknown> {
 ### `ListOptions`
 
 ```ts
+// Signature:
 interface ListOptions {
   unreadOnly?: boolean;
 }
@@ -177,6 +188,7 @@ interface ListOptions {
 ### `Parser`
 
 ```ts
+// Signature:
 type Parser<T> = (value: unknown) => T;
 ```
 
@@ -196,6 +208,7 @@ separate instance with its own table and cron. It nests `@convex-dev/aggregate`.
 ### `register`
 
 ```ts
+// Signature:
 register<TSchema extends GenericSchema>(t: TestConvex<SchemaDefinition<TSchema, boolean>>, name = "notifications"): void
 ```
 

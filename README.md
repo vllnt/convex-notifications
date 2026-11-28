@@ -42,8 +42,8 @@ export default app;
 import { Notifications } from "@vllnt/convex-notifications";
 import { ConvexError, v } from "convex/values";
 
-import { components } from "./_generated/api";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { components } from "./_generated/api.js";
+import { internalMutation, mutation, query } from "./_generated/server.js";
 
 const inbox = new Notifications(components.notifications);
 
@@ -121,8 +121,8 @@ import { Notifications } from "@vllnt/convex-notifications";
 import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
-import { components } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { components } from "./_generated/api.js";
+import { mutation, query } from "./_generated/server.js";
 
 type Mention = { actor: string };
 
@@ -187,8 +187,8 @@ mutation:
 import { Notifications } from "@vllnt/convex-notifications";
 import { v } from "convex/values";
 
-import { components, internal } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
+import { components, internal } from "./_generated/api.js";
+import { internalMutation } from "./_generated/server.js";
 
 const inbox = new Notifications(components.notifications);
 
@@ -218,8 +218,8 @@ own `convex/crons.ts`; the built-in daily cron keeps running.
 import { Notifications } from "@vllnt/convex-notifications";
 import { v } from "convex/values";
 
-import { components } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
+import { components } from "./_generated/api.js";
+import { internalMutation } from "./_generated/server.js";
 
 const inbox = new Notifications(components.notifications);
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -248,7 +248,7 @@ export default app;
 // convex/alerts.ts
 import { Notifications } from "@vllnt/convex-notifications";
 
-import { components } from "./_generated/api";
+import { components } from "./_generated/api.js";
 
 export const alerts = new Notifications(components.alerts);
 ```
@@ -267,8 +267,8 @@ one in the host with `error instanceof ConvexError` and read `error.data.code`:
 import { Notifications } from "@vllnt/convex-notifications";
 import { ConvexError, v } from "convex/values";
 
-import { components } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
+import { components } from "./_generated/api.js";
+import { internalMutation } from "./_generated/server.js";
 
 const inbox = new Notifications(components.notifications);
 
@@ -333,9 +333,9 @@ Convex argument validation before the component runs.
   it is `undefined`. The stored payload is what the parser returned.
 - Timestamps come from the server clock; no method accepts a caller time.
 - Installing on `convex` 1.45.x prints an unmet-peer warning:
-  `@convex-dev/aggregate` 0.3.4 and its `@convex-dev/batch-worker` 0.3.3 resolve
-  `convex-helpers` 0.1.128, whose peer is `convex ^1.46.0`. The package test
-  installs and runs this package on `convex` 1.45.0 and passes.
+  `@convex-dev/aggregate` 0.3.4 and 0.3.5 both pin `convex-helpers` 0.1.128,
+  which `@convex-dev/batch-worker` 0.3.3 also resolves to, and whose peer is
+  `convex ^1.46.0`. The package test passes on `convex` 1.45.0.
 
 ## Compatibility
 
@@ -369,6 +369,18 @@ export default defineConfig({
 });
 ```
 
+`register` works with any host schema, including one with its own tables:
+
+```ts
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  prefs: defineTable({ subjectRef: v.string(), channel: v.string() }),
+});
+```
+
 ```ts
 // convex/inbox.test.ts
 /// <reference types="vite/client" />
@@ -376,8 +388,8 @@ import { register } from "@vllnt/convex-notifications/test";
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 
-import { api, internal } from "./_generated/api";
-import schema from "./schema";
+import { api, internal } from "./_generated/api.js";
+import schema from "./schema.js";
 
 test("a mention reaches the recipient's inbox", async () => {
   const t = convexTest(schema, import.meta.glob("./**/*.ts"));

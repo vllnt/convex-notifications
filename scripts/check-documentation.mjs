@@ -230,19 +230,29 @@ function checkTop(readme, packageName) {
   });
 }
 
-/** Every block tagged; README `ts` blocks complete and placed by path. @param {Record<string, string>} texts */
+/**
+ * Every block in every shipped doc is tagged and has no `...` gap. README `ts`
+ * blocks are complete examples placed by a `// <path>.ts` comment (returned to
+ * be compiled and run); `ts` blocks elsewhere start with `// Signature:` and
+ * are the only ones allowed to omit imports.
+ * @param {Record<string, string>} texts
+ */
 function checkCode(texts) {
+  const gap = /^\s*(?:\/\/\s*)?(?:\.\.\.|…)\s*$/mu;
   Object.entries(texts).forEach(([file, text]) => {
     codeBlocks(text).forEach((block) => {
-      assert.ok(block.lang, `${file}:${String(block.line)} has no language`);
+      const where = `${file}:${String(block.line)}`;
+      assert.ok(block.lang, `${where} has no language`);
+      assert.doesNotMatch(block.code, gap, `${where} has a ... gap`);
+      if (file === "README.md" || block.lang !== "ts") return;
+      const signature = block.code.startsWith("// Signature:\n");
+      assert.ok(signature, `${where}: start with // Signature: or move the example to the README`);
     });
   });
   return codeBlocks(String(texts["README.md"]))
     .filter((block) => block.lang === "ts")
     .map((block) => {
       const where = `README.md:${String(block.line)}`;
-      const gap = /^\s*(?:\/\/\s*)?(?:\.\.\.|…)\s*$/mu;
-      assert.doesNotMatch(block.code, gap, `${where} has a ... gap`);
       const path = /^\/\/ (\S+\.m?ts)\n/u.exec(block.code)?.[1];
       assert.ok(path, `${where} must start with a // <path>.ts comment`);
       return { code: block.code, path };
@@ -734,11 +744,13 @@ export function convexHost(installed, examples) {
     "convex/_generated/api.ts": `${api.join("\n")}\n`,
     "convex/_generated/server.ts": `export { internalMutationGeneric as internalMutation, internalQueryGeneric as internalQuery, mutationGeneric as mutation, queryGeneric as query } from "convex/server";\n`,
   };
-  // A README that shows its own host schema uses it; otherwise an empty one.
+  // A README that shows its own host schema uses it; otherwise one with a host
+  // table, so `register(t)` is always checked against a schema that is not
+  // the component's (an empty schema would hide a too-narrow signature).
   return examples.some(({ path }) => path === "convex/schema.ts")
     ? stubs
     : {
         ...stubs,
-        "convex/schema.ts": `import { defineSchema } from "convex/server";\nexport default defineSchema({});\n`,
+        "convex/schema.ts": `import { defineSchema, defineTable } from "convex/server";\nimport { v } from "convex/values";\nexport default defineSchema({ hostOnly: defineTable({ key: v.string() }) });\n`,
       };
 }
