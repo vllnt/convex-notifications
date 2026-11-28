@@ -19,8 +19,12 @@ const write = (path, content) => {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, content.trimStart());
 };
+// Type-check with both supported compiler majors, using the consumer's own
+// binaries so a TypeScript on PATH (for example this repo's) is never picked up.
 const tsc = (...args) => {
-  run("pnpm", ["exec", "tsc", "--noEmit", "--strict", "--target", "ES2022", ...args]);
+  for (const binary of ["tsc", "tsc6"]) {
+    run(join(temporary, "node_modules", ".bin", binary), ["--noEmit", "--strict", "--target", "ES2022", ...args]);
+  }
 };
 
 // A host app: its own table, functions that call the component through the
@@ -100,6 +104,7 @@ export default defineConfig({
   // Every entry point a consumer imports, so a broken export map fails the type check.
   "consumer.ts": `
 import { Notifications } from "${name}";
+import { register } from "${name}/test";
 import type { ComponentApi } from "${name}/_generated/component";
 import type { ComponentApi as ComponentApiJs } from "${name}/_generated/component.js";
 import config from "${name}/convex.config";
@@ -113,6 +118,7 @@ app.use(config);
 app.use(configJs, { name: "alerts" });
 void new Notifications(component);
 void new Notifications(componentJs);
+void register;
 `,
 };
 
@@ -125,12 +131,14 @@ try {
     JSON.stringify({ private: true, type: "module", pnpm: { ignoredBuiltDependencies: ["esbuild"] } }),
   );
   // pnpm 11 reads the build-script policy from the workspace file, pnpm 10 from package.json.
-  writeFileSync(join(temporary, "pnpm-workspace.yaml"), "allowBuilds:\n  esbuild: false\n");
+  // The repo's 7-day release-age gate; pnpm 10 reads it only from the workspace file.
+  writeFileSync(join(temporary, "pnpm-workspace.yaml"), "allowBuilds:\n  esbuild: false\nminimumReleaseAge: 10080\n");
   run("pnpm", [
     "add",
     join(temporary, tarball),
     "convex@1.45.0",
-    "typescript@npm:@typescript/typescript6@6.0.2",
+    "typescript@7.0.2",
+    "@typescript/typescript6@6.0.2",
     "convex-test@0.0.71",
     "vitest@5.1.1",
     "vite@8.3.8",
@@ -169,7 +177,7 @@ export { config, configJs };
   for (const [path, content] of Object.entries(host)) write(path, content);
   const files = Object.keys(host).filter((path) => path.endsWith(".ts"));
   tsc("--module", "ESNext", "--moduleResolution", "Bundler", "--types", "vite/client", ...files);
-  tsc("--module", "NodeNext", "--moduleResolution", "NodeNext", "consumer.ts");
+  tsc("--module", "NodeNext", "--moduleResolution", "NodeNext", "--types", "vite/client", ...files);
   run("pnpm", ["exec", "vitest", "run"]);
   console.log(`OK    ${name}: tarball installs, type-checks and runs on convex@1.45.0`);
 } finally {
