@@ -29,3 +29,5 @@ export const MAX_FANOUT = 500;
 
 /** Maximum rows mutated by one maintenance transaction. */
 export const MAX_PURGE_BATCH = 500;
+
+export const MAX_REF_LENGTH = 512;

@@ -2,7 +2,7 @@ import { DirectAggregate } from "@convex-dev/aggregate";
 import { ConvexError, v } from "convex/values";
 import { api, components } from "./_generated/api.js";
 import { mutation } from "./_generated/server.js";
-import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH } from "../shared.js";
+import { DEFAULT_RETENTION_MS, MAX_FANOUT, MAX_PURGE_BATCH, MAX_REF_LENGTH } from "../shared.js";
 import { jsonValue } from "./validators.js";
 
 type UnreadAggregate = { Key: number; Id: string; Namespace: string };
@@ -20,6 +20,9 @@ function validateBatch(batch: number): void {
 function requireText(value: string, code: string, name: string): void {
   if (value === "") {
     throw new ConvexError({ code, message: `${name} must be a non-empty string` });
+  }
+  if (value.length > MAX_REF_LENGTH) {
+    throw new ConvexError({ code, message: `${name} must be at most ${MAX_REF_LENGTH} characters` });
   }
 }
 
