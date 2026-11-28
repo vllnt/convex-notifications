@@ -36,7 +36,8 @@ All notable changes to this project are documented here. The format is based on
 - `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
 - Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5.1.1, `vite` 8.3.8,
   `convex-test` 0.0.73, `convex` 1.51, `prettier` 3.10.1, `eslint` 10.15.0,
-  `@vllnt/typescript` 3.0.0, pnpm 10.34.9) and `@convex-dev/aggregate` to 0.3.4.
+  `@vllnt/typescript` 3.0.0) and `@convex-dev/aggregate` to 0.3.4, and the package manager to
+  pnpm 10.34.9.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
 
 ## [0.1.0] - 2026-09-01
