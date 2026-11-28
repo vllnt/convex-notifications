@@ -21,17 +21,6 @@ All notable changes to this project are documented here. The format is based on
   `llms.txt` links shipped files relatively, and a test fails CI when one is missing from the
   tarball.
 
-### Fixed
-
-- `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
-  `subjectRef`, instead of writing unaddressable rows.
-- `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
-  reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
-  `nodenext`.
-- `register(t)` from `@vllnt/convex-notifications/test` accepts a host app's
-  `convexTest(schema, modules)` instance for any host schema; it was typed to the component's own
-  schema, so a host schema with its own tables failed with TS2345.
-
 ### Changed
 
 - Releases are tag-driven through `.github/workflows/publish.yml` (trusted publishing with
@@ -46,6 +35,18 @@ All notable changes to this project are documented here. The format is based on
   `@vllnt/typescript` 3.0.0) and `@convex-dev/aggregate` to 0.3.4, and the package manager to
   pnpm 10.34.9.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
+
+### Fixed
+
+- `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
+  `subjectRef`, instead of writing unaddressable rows. This can break a host that sent empty
+  values; they now fail with `INVALID_TYPE` / `INVALID_SUBJECT_REF`.
+- `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
+  reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
+  `nodenext`.
+- `register(t)` from `@vllnt/convex-notifications/test` accepts a host app's
+  `convexTest(schema, modules)` instance for any host schema; it was typed to the component's own
+  schema, so a host schema with its own tables failed with TS2345.
 
 ## [0.1.0] - 2026-09-01
 
