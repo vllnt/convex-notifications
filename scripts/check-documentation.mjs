@@ -461,14 +461,25 @@ export function externalUrls(texts) {
 }
 
 /**
+ * Exact URLs from the shared Links block on hosts that answer 403 to CI
+ * runners (a bot check on datacenter IPs; x.com answers 200 from other
+ * networks). Printed as unchecked, never silently skipped.
+ */
+const BOT_CHECKED = new Set(["https://x.com/bntvllnt"]);
+
+/**
  * Every external link answers 2xx after redirects (retrying transient
  * failures). npmjs.com is exempt from fetching; its package must exist on the
- * registry (`npm view`).
+ * registry (`npm view`). URLs in `BOT_CHECKED` are listed as unchecked.
  * @param {Record<string, string>} texts
  */
 export async function checkExternalLinks(texts) {
   const failures = [];
   for (const [url, where] of externalUrls(texts)) {
+    if (BOT_CHECKED.has(url)) {
+      console.log(`UNCHECKED ${url} (${where}): bot check blocks CI; verify by hand`);
+      continue;
+    }
     const npm = NPM_SITE.exec(url);
     if (npm) {
       const name = String(npm[1]);
