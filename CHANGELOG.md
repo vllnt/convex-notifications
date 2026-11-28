@@ -53,6 +53,8 @@ All notable changes to this project are documented here. The format is based on
   `@vllnt/typescript` 3.0.0) and `@convex-dev/aggregate` to 0.3.4, and the package manager to
   pnpm 10.34.9.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
+- The 7-day release-age gate for dependency installs is read from `pnpm-workspace.yaml`, where
+  pnpm 10 applies it; Renovate uses the same minimum age.
 
 ### Fixed
 
