@@ -26,12 +26,7 @@ All notable changes to this project are documented here. The format is based on
   table of every export and an errors table of every error code. `docs/API.md` has one heading
   per export, and `llms.txt` adds When to use, a link to the errors table and the vllnt
   Ecosystem block.
-- `scripts/check-documentation.mjs`, run by `pnpm test:package` on the installed tarball, fails
-  CI when a README section is missing or out of order, install is not in the first 40 lines, a
-  code block has no language, a link (relative or external) does not resolve, an export or error
-  code is undocumented, the Links block, footer or Ecosystem block differs, or the retired
-  vllnt domain appears. The README examples are type-checked and their test is run against the packed
-  package on `convex` 1.45.0.
+- A docs contract test runs on the packed package in CI and before every publish.
 - TSDoc `@see https://oss.vllnt.com/packages/convex-notifications` on `Notifications`, and a
   summary on the `convex.config` default export.
 
@@ -46,7 +41,6 @@ All notable changes to this project are documented here. The format is based on
   Convex component for in-app notification inboxes: fan-out delivery, read/unread state, unread
   counts, paginated lists and retention purge." `keywords` add `typescript` and
   `in-app-notifications`.
-- `pnpm lint` also runs `pnpm generate:llms`.
 - Docs corrections: `unreadCount` reads the nested aggregate, not an index; the built-in purge
   cron cannot be lengthened, so a custom `before` only deletes sooner; `markAllRead` shares one
   `readAt` per batch, not per call; Related packages lists only `@convex-dev/aggregate`, the one

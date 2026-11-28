@@ -7,8 +7,9 @@ export const COMPONENT_NAME = "notifications";
  * them: 30 days. Bounds unbounded growth of a subject's inbox while leaving a
  * generous window to surface recently-read items. Unread notifications are
  * never removed by the retention sweep. A host can purge read rows sooner by
- * calling `purge` with a later `before` cutoff; the built-in daily cron still
- * applies this window, so read rows are never kept longer.
+ * calling `purge` with a later `before` cutoff; the built-in cron still applies
+ * this window every 24 hours, so read rows are deleted within about a day of
+ * passing it.
  */
 export const DEFAULT_RETENTION_MS = 2_592_000_000;
 
