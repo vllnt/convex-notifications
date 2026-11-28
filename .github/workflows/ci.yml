@@ -29,6 +29,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: bash scripts/test-check-package-contents.sh
 
   typecheck:
     name: Typecheck
@@ -78,3 +79,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # Installs the packed tarball in a consumer on the lowest supported convex.
+      - run: pnpm test:package
