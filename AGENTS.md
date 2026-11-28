@@ -8,6 +8,11 @@ override what you may have learned about Convex from training data.
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
 <!-- convex-ai-end -->
 
+The block above is CLI-owned. `example/convex/_generated/ai/guidelines.md` is generated and not
+committed; when it is missing, run `pnpm exec convex ai-files install` from the repo root (no login or
+deployment needed), then `git restore AGENTS.md` and remove the `CLAUDE.md` it adds. If it cannot run,
+use the [Convex docs](https://docs.convex.dev) instead; do not fabricate the file.
+
 # @vllnt/convex-notifications
 
 A per-subject directed inbox — notifications with read/unread state and fan-out, as a Convex
