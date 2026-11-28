@@ -20,6 +20,20 @@ All notable changes to this project are documented here. The format is based on
   docs that match the installed version under `node_modules/@vllnt/convex-notifications/`.
   `llms.txt` links shipped files relatively, and a test fails CI when one is missing from the
   tarball.
+- Agent-first docs: the README follows the shared @vllnt section order (For coding agents, When
+  to use, Install, Quick start, API, Common tasks, Errors and fixes, Limits and gotchas,
+  Compatibility, Testing, Security, Related packages, Contributing, Links, License), with an API
+  table of every export and an errors table of every error code. `docs/API.md` has one heading
+  per export, and `llms.txt` adds When to use, a link to the errors table and the vllnt
+  Ecosystem block.
+- `scripts/check-documentation.mjs`, run by `pnpm test:package` on the installed tarball, fails
+  CI when a README section is missing or out of order, install is not in the first 40 lines, a
+  code block has no language, a link (relative or external) does not resolve, an export or error
+  code is undocumented, the Links block, footer or Ecosystem block differs, or the retired
+  vllnt domain appears. The README examples are type-checked and their test is run against the packed
+  package on `convex` 1.45.0.
+- TSDoc `@see https://oss.vllnt.com/packages/convex-notifications` on `Notifications`, and a
+  summary on the `convex.config` default export.
 
 ### Changed
 
@@ -28,6 +42,16 @@ All notable changes to this project are documented here. The format is based on
 - Every push to `main` that touches the package or its shipped docs publishes a `canary`
   build; the repository-variable gate on canary publishing is removed.
 - `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
+- `package.json` `description` and README and `llms.txt` summaries are one sentence: "TypeScript
+  Convex component for in-app notification inboxes: fan-out delivery, read/unread state, unread
+  counts, paginated lists and retention purge." `keywords` add `typescript` and
+  `in-app-notifications`.
+- `pnpm lint` also runs `pnpm generate:llms`.
+- Docs corrections: `unreadCount` reads the nested aggregate, not an index; the built-in purge
+  cron cannot be lengthened, so a custom `before` only deletes sooner; `markAllRead` shares one
+  `readAt` per batch, not per call; Related packages lists only `@convex-dev/aggregate`, the one
+  package this component uses in code. Runtime code and the peer range are unchanged; `dist`
+  differs only in comments and source maps.
 - CI type-checks test files and the example app, and every publish first installs the packed
   tarball in a consumer on `convex` 1.45.0 and runs a host-app `convex-test` through `register(t)`.
 - Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5.1.1, `vite` 8.3.8,

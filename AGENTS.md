@@ -40,7 +40,7 @@ src/
 ```
 
 Sandboxed table: `notifications` — indexed `by_notification_id` (lookup / markRead), `by_subject_created` (a
-subject's inbox), `by_subject_read_created` (a subject's unread slice + count), and `by_read_created`
+subject's inbox), `by_subject_read_created` (a subject's unread slice), and `by_read_created`
 (retention sweep). No host tables are touched. The stored `payload` is opaque to the component; the
 host narrows it via `payloadValidator` at the client boundary.
 
@@ -82,11 +82,11 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
   not the row. `deliver` returns the ids so the host can address a specific notification later.
 
 - **Derived `read` boolean for an indexed unread slice:** `read` is stamped `false` at insert and
-  flipped on `markRead`, so unread listing and `unreadCount` ride the `by_subject_read_created` index
-  with no post-query `.filter()` (forbidden by lint). `markRead` is idempotent — re-reading never
-  churns `readAt`.
+  flipped on `markRead`, so unread listing rides the `by_subject_read_created` index with no
+  post-query `.filter()` (forbidden by lint); `unreadCount` reads the nested `@convex-dev/aggregate`,
+  namespaced by `subjectRef`. `markRead` is idempotent — re-reading never churns `readAt`.
 
-- **Subject-bounded reads (no footgun):** `list`/`unreadCount` are keyed on `subjectRef` in the index,
+- **Subject-bounded reads (no footgun):** `list`/`unreadCount` are keyed on `subjectRef` (index / aggregate namespace),
   so a read for one subject can never silently span another subject's inbox.
 
 - **Recipient-scoped id access:** `markRead` / `get` take an optional `subjectRef`; when the host passes
