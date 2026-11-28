@@ -4,7 +4,7 @@
   "description": "Per-subject directed inbox — deliver notifications with read/unread state and fan-out as a Convex component",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.34.8",
+  "packageManager": "pnpm@10.34.9",
   "files": [
     "dist",
     "src",
@@ -59,16 +59,16 @@
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "@vllnt/eslint-config": "2.1.0",
-    "@vllnt/typescript": "2.0.0",
-    "convex": "^1.50.0",
-    "convex-test": "^0.0.71",
-    "eslint": "^9.39.5",
+    "@vllnt/typescript": "3.0.0",
+    "convex": "^1.51.0",
+    "convex-test": "^0.0.73",
+    "eslint": "^10.15.0",
     "prettier": "^3.10.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "homepage": "https://oss.vllnt.com/packages/convex-notifications",
   "bugs": {
