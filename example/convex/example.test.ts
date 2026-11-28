@@ -12,6 +12,13 @@ import crons, {
 
 const modules = import.meta.glob("./**/*.ts");
 
+/** The first id `deliver` returned; throws (failing the test) when there is none. */
+function firstId(ids: string[]): string {
+  const [id] = ids;
+  if (id === undefined) throw new Error("deliver returned no notification id");
+  return id;
+}
+
 function setup() {
   const t = convexTest(schema, modules);
   register(t); // default "notifications" mount
@@ -37,7 +44,7 @@ describe("notifications — deliver + read (the directed inbox)", () => {
       payload: { actor: "u9" },
     });
     expect(notificationIds).toHaveLength(1);
-    const id = notificationIds[0];
+    const id = firstId(notificationIds);
 
     const unread = await t.query(api.example.get, { notificationId: id });
     expect(unread?.subjectRef).toBe("u1");
@@ -61,7 +68,7 @@ describe("notifications — deliver + read (the directed inbox)", () => {
       type: "ping",
     });
     const n = await t.query(api.example.get, {
-      notificationId: notificationIds[0],
+      notificationId: firstId(notificationIds),
     });
     expect(n?.payload).toBeUndefined();
   });
@@ -72,7 +79,7 @@ describe("notifications — deliver + read (the directed inbox)", () => {
       subjectRef: "u1",
       type: "t",
     });
-    const id = notificationIds[0];
+    const id = firstId(notificationIds);
     await t.mutation(api.example.markRead, { notificationId: id });
     const first = await t.query(api.example.get, { notificationId: id });
     vi.setSystemTime(500);
@@ -184,7 +191,7 @@ describe("notifications — recipient scoping", () => {
       subjectRef: "u1",
       type: "t",
     });
-    const id = notificationIds[0];
+    const id = firstId(notificationIds);
     await expect(
       t.mutation(api.example.markRead, { notificationId: id, subjectRef: "u2" }),
     ).rejects.toThrow(/not found/);
@@ -201,7 +208,7 @@ describe("notifications — recipient scoping", () => {
       subjectRef: "u1",
       type: "t",
     });
-    const id = notificationIds[0];
+    const id = firstId(notificationIds);
     expect(await t.query(api.example.get, { notificationId: id, subjectRef: "u2" })).toBeNull();
     expect(
       (await t.query(api.example.get, { notificationId: id, subjectRef: "u1" }))?.notificationId,
@@ -262,7 +269,7 @@ describe("notifications — concurrency", () => {
       subjectRef: "u1",
       type: "t",
     });
-    const id = notificationIds[0];
+    const id = firstId(notificationIds);
     const results = await Promise.allSettled([
       t.mutation(api.example.markRead, { notificationId: id }),
       t.mutation(api.example.markRead, { notificationId: id }),
@@ -286,7 +293,7 @@ describe("notifications — list (paginated, newest first, unread filter)", () =
     await t.mutation(api.example.deliverOne, { subjectRef: "u1", type: "t3" });
     // read the middle one
     await t.mutation(api.example.markRead, {
-      notificationId: second.notificationIds[0],
+      notificationId: firstId(second.notificationIds),
     });
 
     const all = await t.query(api.example.list, {
@@ -397,7 +404,7 @@ describe("notifications — payload validator (strict client)", () => {
       payload: { actor: "u9" },
     });
     const n = await t.query(api.example.getStrict, {
-      notificationId: notificationIds[0],
+      notificationId: firstId(notificationIds),
     });
     expect(n?.payload).toEqual({ actor: "u9" });
   });
@@ -441,7 +448,7 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
       type: "old",
     });
     await t.mutation(api.example.markRead, {
-      notificationId: oldRead.notificationIds[0],
+      notificationId: firstId(oldRead.notificationIds),
     });
     // unread + old (never purged)
     await t.mutation(api.example.deliverOne, { subjectRef: "u1", type: "unread" });
@@ -452,7 +459,7 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
       type: "fresh",
     });
     await t.mutation(api.example.markRead, {
-      notificationId: fresh.notificationIds[0],
+      notificationId: firstId(fresh.notificationIds),
     });
 
     const removed = await t.mutation(api.example.purge, {
@@ -462,14 +469,14 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
     expect(removed).toBe(1);
     expect(
       await t.query(api.example.get, {
-        notificationId: oldRead.notificationIds[0],
+        notificationId: firstId(oldRead.notificationIds),
       }),
     ).toBeNull();
     // unread + fresh survive
     expect(await t.query(api.example.unreadCount, { subjectRef: "u1" })).toBe(1);
     expect(
       await t.query(api.example.get, {
-        notificationId: fresh.notificationIds[0],
+        notificationId: firstId(fresh.notificationIds),
       }),
     ).not.toBeNull();
   });
@@ -481,7 +488,7 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
       type: "t",
     });
     await t.mutation(api.example.markRead, {
-      notificationId: d.notificationIds[0],
+      notificationId: firstId(d.notificationIds),
     });
     vi.setSystemTime(30 * 24 * 60 * 60 * 1_000);
     expect(await t.mutation(api.example.purge, {})).toBe(0);
@@ -518,7 +525,7 @@ describe("notifications — purge (bounded + self-rescheduling)", () => {
         type: "t",
       });
       await t.mutation(api.example.markRead, {
-        notificationId: d.notificationIds[0],
+        notificationId: firstId(d.notificationIds),
       });
     }
     vi.setSystemTime(1_000);

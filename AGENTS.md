@@ -8,6 +8,14 @@ override what you may have learned about Convex from training data.
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
 <!-- convex-ai-end -->
 
+The block above is CLI-owned. `example/convex/_generated/ai/guidelines.md` is generated and not
+committed; when it is missing, run `pnpm exec convex ai-files install` from the repo root (needs
+network access, but no Convex login or deployment), then `git restore AGENTS.md` and remove the
+`CLAUDE.md` it adds; if it cannot run, use the [Convex docs](https://docs.convex.dev) instead and do
+not fabricate the file. `convex.json` sets `aiFiles.skills.agents` to `[]`, so the command writes only
+the guidelines and the Convex sections of `AGENTS.md`/`CLAUDE.md` and installs no agent skills (they
+would create `.claude/`, forbidden here).
+
 # @vllnt/convex-notifications
 
 A per-subject directed inbox — notifications with read/unread state and fan-out, as a Convex
@@ -40,7 +48,7 @@ src/
 ```
 
 Sandboxed table: `notifications` — indexed `by_notification_id` (lookup / markRead), `by_subject_created` (a
-subject's inbox), `by_subject_read_created` (a subject's unread slice + count), and `by_read_created`
+subject's inbox), `by_subject_read_created` (a subject's unread slice), and `by_read_created`
 (retention sweep). No host tables are touched. The stored `payload` is opaque to the component; the
 host narrows it via `payloadValidator` at the client boundary.
 
@@ -82,11 +90,11 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
   not the row. `deliver` returns the ids so the host can address a specific notification later.
 
 - **Derived `read` boolean for an indexed unread slice:** `read` is stamped `false` at insert and
-  flipped on `markRead`, so unread listing and `unreadCount` ride the `by_subject_read_created` index
-  with no post-query `.filter()` (forbidden by lint). `markRead` is idempotent — re-reading never
-  churns `readAt`.
+  flipped on `markRead`, so unread listing rides the `by_subject_read_created` index with no
+  post-query `.filter()` (forbidden by lint); `unreadCount` reads the nested `@convex-dev/aggregate`,
+  namespaced by `subjectRef`. `markRead` is idempotent — re-reading never churns `readAt`.
 
-- **Subject-bounded reads (no footgun):** `list`/`unreadCount` are keyed on `subjectRef` in the index,
+- **Subject-bounded reads (no footgun):** `list`/`unreadCount` are keyed on `subjectRef` (index / aggregate namespace),
   so a read for one subject can never silently span another subject's inbox.
 
 - **Recipient-scoped id access:** `markRead` / `get` take an optional `subjectRef`; when the host passes
@@ -109,7 +117,7 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
 
 - **Backend-only (no `./react` entry):** an inbox / unread count / unread list is an ordinary reactive
   `useQuery` over the host's own re-exported `list`/`unreadCount`/`get` refs — a dedicated hook would
-  wrap the host's `api` with no added value. Explicit analysis decision (see README); re-run when a real
+  wrap the host's `api` with no added value. Explicit analysis decision (see README `## Compatibility`); re-run when a real
   management-surface consumer appears.
 
 ## Conventions
@@ -125,12 +133,13 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
 
 | Changed | Update in the same commit |
 |---------|--------------------------|
-| Public API (deliver/markRead/markAllRead/get/list/unreadCount/purge signatures) | README API Reference table, `docs/API.md`, `llms.txt` context |
-| Config options / defaults (validator, retention, batch, maxFanOut) | README API Reference, `docs/API.md` constructor section |
-| Schema / table / indexes | README Architecture, `docs/API.md` |
-| Error codes | `docs/API.md` → `## Error codes` table |
-| `peerDependencies.convex` version | `llms.txt` context line (`convex@^X.Y.Z`), `docs/API.md` Compatibility line, README Installation peer note |
+| Public API (deliver/markRead/markAllRead/get/list/unreadCount/purge signatures) | README `## API` table, `docs/API.md`, `llms.txt` context |
+| Config options / defaults (validator, retention, batch, maxFanOut) | README `## API`, `docs/API.md` constructor section |
+| Schema / table / indexes | Architecture section above, README `## Limits and gotchas` when behaviour changes |
+| Error codes | README `## Errors and fixes` table, `docs/API.md` → `## Errors` table |
+| `peerDependencies.convex` version | `llms.txt` context line (`convex@^X.Y.Z`), `docs/API.md` Compatibility line, README `## Compatibility` peer note |
 | Read-state / inbox semantics | `docs/API.md` mutation/query sections, Key design decisions above |
+| Files shipped in the npm tarball (`package.json` `files`) | `scripts/package-contents.test.mjs` required list, the README / `llms.txt` "For coding agents" notes, `publish.yml` push paths |
 | Any change | `pnpm generate:llms` to validate the `llms.txt` heading and links |
 
 Grep old values before committing (e.g. after a `peerDependencies.convex` bump, `git grep "1.41.0"` → only the new range survives).

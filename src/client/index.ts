@@ -120,13 +120,20 @@ interface RunMutationCtx {
  * @example
  * ```ts
  * const inbox = new Notifications(components.notifications, {
- *   payloadValidator: v.object({ actor: v.string() }).parse,
+ *   payloadValidator: (value) => {
+ *     if (typeof value !== "object" || value === null || !("actor" in value) || typeof value.actor !== "string") {
+ *       throw new Error("Expected an actor string");
+ *     }
+ *     return { actor: value.actor };
+ *   },
  * });
  * const { notificationIds } = await inbox.deliver(ctx, ["u1", "u2"], "mention", { actor: "u9" });
  * const count = await inbox.unreadCount(ctx, "u1");          // 1
  * const page = await inbox.list(ctx, "u1", { cursor: null, numItems: 20 }, { unreadOnly: true });
- * await inbox.markRead(ctx, notificationIds[0]);
+ * for (const notificationId of notificationIds) await inbox.markRead(ctx, notificationId);
  * ```
+ *
+ * @see https://oss.vllnt.com/packages/convex-notifications
  */
 export class Notifications<TPayload = unknown> {
   private readonly payloadValidator: Parser<TPayload> | undefined;

@@ -1,151 +1,255 @@
 # API Reference — @vllnt/convex-notifications
 
-**Compatibility:** `convex@^1.45.0`
+**Compatibility:** `convex@^1.45.0`. This file ships in the npm package at
+`node_modules/@vllnt/convex-notifications/docs/API.md` and matches the installed
+version.
 
-Construct the client with the mounted component and optional host config:
+## Entry points
+
+| Import                                                         | Exports                                                                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@vllnt/convex-notifications`                                  | `Notifications` class; types `NotificationsComponent`, `NotificationsOptions`, `NotificationView`, `ListOptions`, `Parser` |
+| `@vllnt/convex-notifications/convex.config` (or `.js`)         | default component config for `app.use(...)`                                                                            |
+| `@vllnt/convex-notifications/test`                             | `register(t, name = "notifications")` for `convex-test` (TypeScript source; needs Vite `import.meta.glob`)             |
+| `@vllnt/convex-notifications/_generated/component` (or `.js`)  | type `ComponentApi`                                                                                                    |
+
+`subjectRef` (the recipient) and `type` are opaque host strings; the component
+only requires them to be non-empty where noted. `payload` is any Convex value,
+stored as given. Every timestamp (`createdAt`, `readAt`) is read from the server
+clock inside the handler; no method accepts a caller time.
+
+## Client
+
+### `Notifications`
 
 ```ts
-import { Notifications } from "@vllnt/convex-notifications";
-
-const inbox = new Notifications<{ actor: string }>(components.notifications, {
-  payloadValidator: (value) => {
-    if (
-      typeof value !== "object" ||
-      value === null ||
-      !("actor" in value) ||
-      typeof value.actor !== "string"
-    ) {
-      throw new Error("Expected an actor string");
-    }
-    return { actor: value.actor };
-  },
-  maxFanOut: 256, // cap a single deliver fan-out (default 256)
-});
+// Signature:
+new Notifications<TPayload = unknown>(
+  component: NotificationsComponent,
+  options?: NotificationsOptions<TPayload>,
+)
 ```
 
-`Notifications<TPayload = unknown>` is generic over the host's opaque `payload`
-type. All methods take the host `ctx` (a query or mutation context) as the first
-argument.
+`component` is the mounted component, `components.notifications` (or the name
+passed to `app.use`). When `TPayload` is not `unknown`, `options` is required and
+must include `payloadValidator`. `maxFanOut` defaults to 256; a value that is not
+an integer from 1 to 500 throws a `RangeError` from the constructor.
 
-**Time is server-sourced.** Every handler stamps `createdAt`/`readAt` from
-`Date.now()` itself; no method accepts a caller-supplied clock.
+Mutation methods need a context with `runMutation` (a mutation or action
+context); query methods need one with `runQuery`.
 
-**Validation.** A typed `Notifications<TPayload>` client requires
-`payloadValidator`; it runs at the client boundary over values written by
-`deliver` and returned by `get` / `list`. Use the default
-`Notifications<unknown>` construction to intentionally leave opaque data
-unvalidated.
+### `deliver`
 
-## Mutations
+```ts
+// Signature:
+deliver(ctx, subjects: string | string[], type: string, payload?: TPayload): Promise<{ notificationIds: string[] }>
+```
 
-### `deliver(ctx, subjects, type, payload?) → { notificationIds }`
+Inserts one unread notification per entry of `subjects` and returns one minted
+`notificationId` (`crypto.randomUUID()`) per entry, in order. All rows of one
+call share one `createdAt`. A defined `payload` is passed through
+`payloadValidator` first, and the parser's return value is stored.
 
-`subjects` is a single opaque `subjectRef` or an array of them. Deliver one
-notification to each recipient — the fan-out. Each row is minted a component
-`notificationId`, inserted unread, with `createdAt` stamped from the server
-clock. `type` tags the notification; `payload` is opaque host data validated
-against `payloadValidator` before storage. Returns one `notificationId` per
-recipient, in order.
+Throws `EMPTY_FANOUT` for an empty array, `FANOUT_TOO_LARGE` for more entries
+than `maxFanOut`, `INVALID_TYPE` for `type: ""` and `INVALID_SUBJECT_REF` for an
+empty entry, before writing anything. Entries are not deduplicated, and repeated
+calls create new rows: `deliver` is not idempotent. The component also checks
+the `maxFanOut` it receives (`INVALID_MAX_FANOUT`), which only a direct
+component call can get wrong.
 
-An empty recipient set throws `ConvexError({ code: "EMPTY_FANOUT" })`; a set
-larger than the client's `maxFanOut` throws
-`ConvexError({ code: "FANOUT_TOO_LARGE" })`, so one mutation can never silently
-amplify past the transaction write budget. The configured cap must be an integer
-from 1–500. Delivery is intentionally non-idempotent: repeated logical calls
-mint new rows, so at-least-once producers should gate delivery with
-`@vllnt/convex-idempotency`. Duplicate subjects in one array also receive
-multiple rows; the cap counts array entries. Invalid `maxFanOut` at construction
-throws a plain `RangeError`; direct component calls are checked with coded
-`INVALID_MAX_FANOUT`.
+### `markRead`
 
-### `markRead(ctx, notificationId, opts?) → null`
+```ts
+// Signature:
+markRead(ctx, notificationId: string, opts?: { subjectRef?: string }): Promise<null>
+```
 
-`opts`: `{ subjectRef?: string }`.
+Marks one notification read and stamps `readAt`. Marking a read notification
+again does nothing and keeps the first `readAt`. Throws `NOT_FOUND` when no
+notification has the id, or, when `opts.subjectRef` is passed, when the
+notification is addressed to a different recipient (it stays unread). Without
+`opts.subjectRef` the id alone is trusted.
 
-Mark one notification read, stamping `readAt` from the server clock. Idempotent
-— re-marking a read notification is a no-op. A missing id throws
-`ConvexError({ code: "NOT_FOUND" })`. A component function cannot read
-`ctx.auth`, so recipient ownership is the host's job: resolve the caller's
-identity and pass it as `opts.subjectRef`. A notification addressed to a
-different recipient is then reported as `NOT_FOUND` (indistinguishable from a
-missing id) and stays unread. Without `subjectRef` the id alone is trusted.
+### `markAllRead`
 
-### `markAllRead(ctx, subjectRef, opts?) → number`
+```ts
+// Signature:
+markAllRead(ctx, subjectRef: string, opts?: { batch?: number }): Promise<number>
+```
 
-`opts`: `{ batch?: number }` (default `batch = 200`, valid integer range 1–500).
+Marks up to `batch` (default 200, integer from 1 to 500) of the recipient's
+unread notifications read, oldest first, with one `readAt` per batch. When a full
+batch was marked it schedules itself for the next batch. Returns the count
+marked by this call's batch only. Throws `INVALID_BATCH` and, for
+`subjectRef: ""`, `INVALID_SUBJECT_REF`.
 
-Mark every unread notification for `subjectRef` (non-empty) read, oldest first, sharing one
-server-clock `readAt`. Returns the count marked in the first pass. If a full
-batch was marked the sweep self-reschedules through the component scheduler
-until the unread tail is clean. Idempotent — an already-empty unread inbox marks
-nothing.
+### `get`
 
-### `purge(ctx, opts?) → number`
+```ts
+// Signature:
+get(ctx, notificationId: string, opts?: { subjectRef?: string }): Promise<NotificationView<TPayload> | null>
+```
 
-`opts`: `{ before?: number; batch?: number }` (defaults:
-`before = Date.now() - 30 days`, `batch = 200`; valid batch range: 1–500).
+The notification, or `null` when no notification has the id or, with
+`opts.subjectRef`, when it is addressed to a different recipient. The payload
+goes through `payloadValidator` when one is set.
 
-Delete up to `batch` **read** notifications whose `createdAt < before`, oldest
-first via the `by_read_created` index, and return the count removed in the first
-pass. Unread notifications are never purged. If a full batch was removed the
-sweep self-reschedules until the read tail is clean. Idempotent — safe to run
-anytime. A built-in daily cron drives it automatically; call `purge` directly
-only for an extra or custom-cadence sweep.
+### `list`
 
-## Queries
+```ts
+// Signature:
+list(ctx, subjectRef: string, paginationOpts: PaginationOptions, opts?: ListOptions): Promise<PaginationResult<NotificationView<TPayload>>>
+```
 
-### `get(ctx, notificationId, opts?) → NotificationView | null`
+One page of the recipient's notifications, newest first (by `createdAt`). With
+`{ unreadOnly: true }` only unread ones. Takes the standard Convex
+`paginationOpts` (validate it with `paginationOptsValidator` from
+`convex/server`) and returns the standard envelope: `page`, `isDone`,
+`continueCursor`, and optional `splitCursor` and `pageStatus`. A read for one
+`subjectRef` never returns another recipient's rows. Each payload goes through
+`payloadValidator`; one that fails makes the whole call throw.
 
-`opts`: `{ subjectRef?: string }`.
+### `unreadCount`
 
-The current notification for `notificationId`, or `null` if none is held. With
-`opts.subjectRef`, a notification addressed to another recipient is also `null`.
-`NotificationView` is
-`{ notificationId, subjectRef, type, payload?, readAt?, createdAt }`; `payload`
-is narrowed by the host validator when set; `readAt` is absent while unread.
+```ts
+// Signature:
+unreadCount(ctx, subjectRef: string): Promise<number>
+```
 
-### `list(ctx, subjectRef, paginationOpts, opts?) → PaginationResult<NotificationView>`
+The number of unread notifications for the recipient. It is kept in the nested
+`@convex-dev/aggregate` component, updated in the same transaction as each
+`deliver`, `markRead` and `markAllRead`, so the count does not scan the inbox.
 
-`opts`: `{ unreadOnly?: boolean }` (default `false`).
+### `purge`
 
-Page a subject's inbox, newest first. With `unreadOnly`, only unread
-notifications are returned (via the `by_subject_read_created` index,
-`read == false`); otherwise the whole inbox via `by_subject_created`. Takes the
-standard Convex `paginationOpts` and returns the standard paginated envelope
-(`page`, `isDone`, `continueCursor`) with each row narrowed to the typed view.
-**Subject-bounded** — never returns another subject's rows.
+```ts
+// Signature:
+purge(ctx, opts?: { before?: number; batch?: number }): Promise<number>
+```
 
-### `unreadCount(ctx, subjectRef) → number`
+Deletes up to `batch` (default 200, integer from 1 to 500) **read**
+notifications with `createdAt < before`, oldest first across all recipients.
+`before` defaults to the server time minus 30 days. When a full batch was
+deleted it schedules itself with the same `before`. Returns the count deleted by
+this call's batch only. Unread notifications are never deleted. Throws
+`INVALID_BATCH`, and `INVALID_BEFORE` for a non-finite `before`.
 
-The number of unread notifications for `subjectRef`, maintained transactionally
-and queried in logarithmic time through the nested official
-`@convex-dev/aggregate` component. Subject-bounded.
+The component's own cron runs `purge` with `batch` 200 and the 30-day default
+every 24 hours (see [Cron](#cron)); call `purge` yourself only to delete sooner.
 
-## Error codes
+## Types
 
-Coded `ConvexError`s thrown by the component (`error.data.code`):
+### `NotificationsComponent`
 
-| Code                 | Thrown by              | Meaning                                              |
-| -------------------- | ---------------------- | ---------------------------------------------------- |
-| `EMPTY_FANOUT`       | `deliver`              | The recipient set was empty.                         |
-| `FANOUT_TOO_LARGE`   | `deliver`              | The recipient set exceeded the client's `maxFanOut`. |
-| `INVALID_MAX_FANOUT` | `deliver`              | `maxFanOut` was not an integer from 1–500.           |
-| `INVALID_TYPE`       | `deliver`              | `type` was an empty string or over 512 characters.   |
-| `INVALID_SUBJECT_REF`| `deliver`, `markAllRead` | A `subjectRef` was an empty string or over 512 characters. |
-| `INVALID_BATCH`      | `markAllRead`, `purge` | `batch` was not an integer from 1–500.               |
-| `INVALID_BEFORE`     | `purge`                | The cutoff must be finite.                           |
-| `NOT_FOUND`          | `markRead`             | No notification has this `notificationId` (for the given `subjectRef`, if passed). |
+The type of `components.notifications`: the component's `mutations` (`deliver`,
+`markRead`, `markAllRead`, `purge`) and `queries` (`get`, `list`,
+`unreadCount`) function references, with `payload` typed `unknown`.
 
-## Cron / Maintenance
+### `NotificationsOptions`
 
-The component registers one cron (`crons.ts`):
+```ts
+// Signature:
+interface NotificationsOptions<TPayload> {
+  payloadValidator?: Parser<TPayload>;
+  maxFanOut?: number;
+}
+```
 
-| Job                   | Cadence                      | Action                                                                                        |
-| --------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| `notifications:purge` | every 24h (`PURGE_INTERVAL`) | runs `purge` with `batch = PURGE_BATCH` (200), self-rescheduling until the read tail is clean |
+`payloadValidator` narrows payloads on `deliver` (before storage) and on `get` /
+`list`. `maxFanOut` caps one `deliver` call (default 256, integer from 1 to 500).
 
-Cadence is a static module constant (Convex cron definitions are static per
-deployment). A host wanting a different cadence drives `purge` from its own
-scheduler with an explicit `before` cutoff. This does not disable the default
-30-day sweep or extend its retention. The cron is per-mount, so each
-`app.use(component, { name })` instance purges its own sandbox independently.
+### `NotificationView`
+
+```ts
+// Signature:
+interface NotificationView<TPayload = unknown> {
+  notificationId: string;
+  subjectRef: string;
+  type: string;
+  payload?: TPayload;
+  readAt?: number;
+  createdAt: number;
+}
+```
+
+`readAt` is absent while the notification is unread. There is no `read` field.
+
+### `ListOptions`
+
+```ts
+// Signature:
+interface ListOptions {
+  unreadOnly?: boolean;
+}
+```
+
+`unreadOnly` defaults to `false` (the whole inbox).
+
+### `Parser`
+
+```ts
+// Signature:
+type Parser<T> = (value: unknown) => T;
+```
+
+Returns the narrowed value or throws. A schema library's parse function (such as
+Zod's `.parse`) fits; `convex/values` validators have no `parse` method, so
+write a type-guarding function for them.
+
+## Other entry points
+
+### `convex.config`
+
+`import notifications from "@vllnt/convex-notifications/convex.config"` is the
+component definition, named `notifications`. Mount it with
+`app.use(notifications)`, or `app.use(notifications, { name })` for another,
+separate instance with its own table and cron. It nests `@convex-dev/aggregate`.
+
+### `register`
+
+```ts
+// Signature:
+register<TSchema extends GenericSchema>(t: TestConvex<SchemaDefinition<TSchema, boolean>>, name = "notifications"): void
+```
+
+Registers the component and its nested aggregate (`<name>/aggregate`) in a host
+`convexTest(schema, modules)` instance, for any host schema. Pass the mount
+name when the app uses `app.use(notifications, { name })`. It is TypeScript
+source that calls Vite's `import.meta.glob`, so run it under Vitest.
+
+### `ComponentApi`
+
+`import type { ComponentApi } from "@vllnt/convex-notifications/_generated/component"`
+is the Convex-generated type of the mounted component. It is type-only and is
+assignable to `NotificationsComponent`.
+
+## Errors
+
+Component errors are `ConvexError`s with `data: { code, message }`:
+
+| Code                  | Thrown by                | Meaning                                                                       |
+| --------------------- | ------------------------ | ----------------------------------------------------------------------------- |
+| `EMPTY_FANOUT`        | `deliver`                | The recipient array was empty.                                                |
+| `FANOUT_TOO_LARGE`    | `deliver`                | The recipient array had more entries than the client's `maxFanOut`.           |
+| `INVALID_MAX_FANOUT`  | `deliver`                | The `maxFanOut` sent to the component was not an integer from 1 to 500.      |
+| `INVALID_TYPE`        | `deliver`                | `type` was an empty string.                                                   |
+| `INVALID_SUBJECT_REF` | `deliver`, `markAllRead` | A `subjectRef` was an empty string.                                           |
+| `INVALID_BATCH`       | `markAllRead`, `purge`   | `batch` was not an integer from 1 to 500.                                     |
+| `INVALID_BEFORE`      | `purge`                  | `before` was not finite.                                                      |
+| `NOT_FOUND`           | `markRead`               | No notification has this id (for the given `subjectRef`, if passed).         |
+
+The client constructor throws a plain `RangeError` (no code) for an invalid
+`maxFanOut`. Errors thrown by your `payloadValidator` reach the caller
+unchanged. Causes and fixes:
+[README errors and fixes](../README.md#errors-and-fixes).
+
+## Cron
+
+The component registers one cron in `crons.ts`:
+
+| Job                   | Cadence        | Action                                                                  |
+| --------------------- | -------------- | ----------------------------------------------------------------------- |
+| `notifications:purge` | every 24 hours | `purge` with `batch` 200 and the 30-day default, repeating while full |
+
+The cadence and retention are constants; the cron cannot be disabled or
+lengthened. Each mount runs its own cron over its own table.

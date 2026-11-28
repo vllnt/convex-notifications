@@ -3,8 +3,9 @@
 /**
  * Validates and narrows an opaque stored value to a host type `T` at the client
  * boundary. Receives the raw value the component returned (`unknown`) and MUST
- * return a typed `T` or throw. A `convex/values` validator's `.parse` (or a Zod
- * `.parse`) fits directly; omit it to keep the value unvalidated.
+ * return a typed `T` or throw. A schema library's parse function (such as Zod's
+ * `.parse`) fits directly; `convex/values` validators have no `.parse`, so write
+ * a type-guarding function instead. Omit it to keep the value unvalidated.
  *
  * @typeParam T - The host's stored type (a notification `payload`).
  */
@@ -42,8 +43,9 @@ export interface NotificationsOptions<TPayload> {
    */
   payloadValidator?: Parser<TPayload>;
   /**
-   * Hard cap on a single `deliver` fan-out's recipient count. Defaults to
-   * `DEFAULT_MAX_FANOUT` (256); bounds the write amplification of one mutation.
+   * Hard cap on a single `deliver` fan-out's recipient count. Defaults to 256;
+   * must be an integer from 1 to 500, or the constructor throws a `RangeError`.
+   * Bounds the write amplification of one mutation.
    */
   maxFanOut?: number;
 }

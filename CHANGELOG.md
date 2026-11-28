@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Unreleased
+## [Unreleased]
+
+## [0.2.0] - 2026-11-28
 
 ### Added
 
@@ -14,25 +16,57 @@ All notable changes to this project are documented here. The format is based on
   read or mark another recipient's notification by id. Omitting it keeps the previous
   id-only behavior.
 - `INVALID_TYPE` and `INVALID_SUBJECT_REF` error codes.
-
-### Fixed
-
-- `deliver` rejects a `type` over 512 characters with `INVALID_TYPE`, and `deliver` and
-  `markAllRead` reject a `subjectRef` over 512 characters with `INVALID_SUBJECT_REF`, so
-  oversized refs never reach storage, the inbox indexes or the unread aggregate.
-- `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
-  `subjectRef`, instead of writing unaddressable rows.
-- `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
-  reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
-  `nodenext`.
+- The npm package ships `docs/API.md`, `CHANGELOG.md` and `llms.txt`, so coding agents can read
+  docs that match the installed version under `node_modules/@vllnt/convex-notifications/`.
+  `llms.txt` links shipped files relatively, and a test fails CI when one is missing from the
+  tarball.
+- Agent-first docs: the README follows the shared @vllnt section order (For coding agents, When
+  to use, Install, Quick start, API, Common tasks, Errors and fixes, Limits and gotchas,
+  Compatibility, Testing, Security, Related packages, Contributing, Links, License), with an API
+  table of every export and an errors table of every error code. `docs/API.md` has one heading
+  per export, and `llms.txt` adds When to use, a link to the errors table and the vllnt
+  Ecosystem block.
+- A docs contract test runs on the packed package in CI and before every publish.
+- TSDoc `@see https://oss.vllnt.com/packages/convex-notifications` on `Notifications`, and a
+  summary on the `convex.config` default export.
 
 ### Changed
 
 - Releases are tag-driven through `.github/workflows/publish.yml` (trusted publishing with
   provenance); actions are pinned to commit SHAs and local publish scripts are removed.
-- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5, `vite` 8.3,
-  `convex-test` 0.0.65, `convex` 1.48, `prettier` 3.9.10) and `@convex-dev/aggregate` to 0.3.4.
+- Every push to `main` that touches the package or its shipped docs publishes a `canary`
+  build; the repository-variable gate on canary publishing is removed.
+- `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
+- `package.json` `description` and README and `llms.txt` summaries are one sentence: "TypeScript
+  Convex component for in-app notification inboxes: fan-out delivery, read/unread state, unread
+  counts, paginated lists and retention purge." `keywords` add `typescript` and
+  `in-app-notifications`.
+- Docs corrections: `unreadCount` reads the nested aggregate, not an index; the built-in purge
+  cron cannot be lengthened, so a custom `before` only deletes sooner; `markAllRead` shares one
+  `readAt` per batch, not per call; Related packages lists only `@convex-dev/aggregate`, the one
+  package this component uses in code. Runtime code and the peer range are unchanged; `dist`
+  differs only in comments and source maps.
+- CI type-checks test files and the example app, and every publish first installs the packed
+  tarball in a consumer on `convex` 1.45.0 and runs a host-app `convex-test` through `register(t)`.
+- Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5.1.1, `vite` 8.3.8,
+  `convex-test` 0.0.73, `convex` 1.51, `prettier` 3.10.1, `eslint` 10.15.0,
+  `@vllnt/typescript` 3.0.0) and `@convex-dev/aggregate` to 0.3.4, and the package manager to
+  pnpm 10.34.9.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
+- The 7-day release-age gate for dependency installs is read from `pnpm-workspace.yaml`, where
+  pnpm 10 applies it; Renovate uses the same minimum age.
+
+### Fixed
+
+- `deliver` rejects an empty `type` or `subjectRef`, and `markAllRead` rejects an empty
+  `subjectRef`, instead of writing unaddressable rows. This can break a host that sent empty
+  values; they now fail with `INVALID_TYPE` / `INVALID_SUBJECT_REF`.
+- `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
+  reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
+  `nodenext`.
+- `register(t)` from `@vllnt/convex-notifications/test` accepts a host app's
+  `convexTest(schema, modules)` instance for any host schema; it was typed to the component's own
+  schema, so a host schema with its own tables failed with TS2345.
 
 ## [0.1.0] - 2026-09-01
 
