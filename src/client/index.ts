@@ -130,8 +130,10 @@ interface RunMutationCtx {
  * const { notificationIds } = await inbox.deliver(ctx, ["u1", "u2"], "mention", { actor: "u9" });
  * const count = await inbox.unreadCount(ctx, "u1");          // 1
  * const page = await inbox.list(ctx, "u1", { cursor: null, numItems: 20 }, { unreadOnly: true });
- * await inbox.markRead(ctx, notificationIds[0]);
+ * for (const notificationId of notificationIds) await inbox.markRead(ctx, notificationId);
  * ```
+ *
+ * @see https://oss.vllnt.com/packages/convex-notifications
  */
 export class Notifications<TPayload = unknown> {
   private readonly payloadValidator: Parser<TPayload> | undefined;

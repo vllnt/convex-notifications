@@ -48,6 +48,8 @@ jobs:
       - run: pnpm test:coverage
       - run: pnpm build
       - run: pnpm test:package
+        env:
+          DOCS_LINKS: offline
 
   canary:
     name: Publish Canary

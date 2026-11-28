@@ -4,7 +4,8 @@ import { api } from "./_generated/api.js";
 /**
  * Default sweep cadence and page size for the built-in purge cron. The cron is
  * the component's own self-healing safety net — a host that wants a different
- * cadence drives `purge` from its own scheduler instead (the client exposes it).
+ * cadence also drives `purge` from its own scheduler (the client exposes it);
+ * this cron keeps running.
  * Convex cron definitions are static per deployment, so cadence is a documented
  * module constant rather than a mount-time option; the page size bounds each
  * sweep and `purge` self-reschedules until the read tail is clean.
