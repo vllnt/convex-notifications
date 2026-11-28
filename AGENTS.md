@@ -127,8 +127,8 @@ mounts a second instance (`app.use(component, { name })`) for a static partition
 |---------|--------------------------|
 | Public API (deliver/markRead/markAllRead/get/list/unreadCount/purge signatures) | README `## API` table, `docs/API.md`, `llms.txt` context |
 | Config options / defaults (validator, retention, batch, maxFanOut) | README `## API`, `docs/API.md` constructor section |
-| Schema / table / indexes | README Architecture, `docs/API.md` |
-| Error codes | `docs/API.md` → `## Error codes` table |
+| Schema / table / indexes | Architecture section above, README `## Limits and gotchas` when behaviour changes |
+| Error codes | README `## Errors and fixes` table, `docs/API.md` → `## Errors` table |
 | `peerDependencies.convex` version | `llms.txt` context line (`convex@^X.Y.Z`), `docs/API.md` Compatibility line, README `## Compatibility` peer note |
 | Read-state / inbox semantics | `docs/API.md` mutation/query sections, Key design decisions above |
 | Files shipped in the npm tarball (`package.json` `files`) | `scripts/package-contents.test.mjs` required list, the README / `llms.txt` "For coding agents" notes, `publish.yml` push paths |

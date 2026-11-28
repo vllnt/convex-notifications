@@ -116,7 +116,8 @@ export { config, configJs };
   // stub Convex host: type-checked with both compilers and module resolutions,
   // and its test example run with the README's own vitest.config.mts.
   // `--skipLibCheck`, as in a Convex app's tsconfig: the `vitest` and
-  // `vitest/config` typings need @types/node, which a host need not install.
+  // `vitest/config` typings need @types/node and a newer lib than ES2022,
+  // which a host need not have.
   // It skips only `.d.ts` files: the README files and the shipped `./test`
   // source are still checked, and the entry points above are checked without it.
   // DOCS_LINKS=offline (the publish gate) skips fetching external links, so a
