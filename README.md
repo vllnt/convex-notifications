@@ -1,9 +1,9 @@
 # @vllnt/convex-notifications
 
-![Notifications Inbox — @vllnt/convex-notifications](https://raw.githubusercontent.com/vllnt/convex-notifications/main/.github/assets/thumbnail.png)
-
 TypeScript Convex component for in-app notification inboxes: fan-out delivery,
 read/unread state, unread counts, paginated lists and retention purge.
+
+![Notifications Inbox — @vllnt/convex-notifications](https://raw.githubusercontent.com/vllnt/convex-notifications/main/.github/assets/thumbnail.png)
 
 ## For coding agents
 
