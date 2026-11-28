@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { checkDocumentation, convexHost, writeHost } from "./check-documentation.mjs";
 
 const root = process.cwd();
-const { name } = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const { name, packageManager } = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const temporary = mkdtempSync(join(tmpdir(), "notifications-consumer-"));
 
 const run = (command, args, cwd = temporary) => {
@@ -61,7 +61,8 @@ try {
   if (tarball === undefined) throw new Error("pnpm pack produced no tarball");
   writeFileSync(
     join(temporary, "package.json"),
-    JSON.stringify({ private: true, type: "module", pnpm: { ignoredBuiltDependencies: ["esbuild"] } }),
+    // Pin the repo's pnpm (`packageManager`), so Corepack never runs a newer pnpm here.
+    JSON.stringify({ private: true, type: "module", packageManager, pnpm: { ignoredBuiltDependencies: ["esbuild"] } }),
   );
   // pnpm 11 reads the build-script policy from the workspace file, pnpm 10 from package.json.
   // The repo's 7-day release-age gate; pnpm 10 reads it only from the workspace file.

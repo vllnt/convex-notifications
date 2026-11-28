@@ -34,8 +34,8 @@ All notable changes to this project are documented here. The format is based on
 
 - Releases are tag-driven through `.github/workflows/publish.yml` (trusted publishing with
   provenance); actions are pinned to commit SHAs and local publish scripts are removed.
-- Every push to `main` that touches the package or its shipped docs publishes a `canary`
-  build; the repository-variable gate on canary publishing is removed.
+- Every push to `main` publishes a `canary` build; the repository-variable gate on canary
+  publishing is removed.
 - `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
 - `package.json` `description` and README and `llms.txt` summaries are one sentence: "TypeScript
   Convex component for in-app notification inboxes: fan-out delivery, read/unread state, unread
@@ -54,7 +54,11 @@ All notable changes to this project are documented here. The format is based on
   pnpm 10.34.9.
 - Patch the `deepmerge-ts` advisory in the lint toolchain through `pnpm.overrides`.
 - The 7-day release-age gate for dependency installs is read from `pnpm-workspace.yaml`, where
-  pnpm 10 applies it; Renovate uses the same minimum age.
+  pnpm 10 applies it.
+- Internal: CI and publish set up pnpm through Corepack (the `packageManager` pnpm), so every
+  action in `ci.yml` and `publish.yml` is GitHub's own and pinned to a commit; superseded pull
+  request CI runs are cancelled; the package test's consumer uses the repo's pnpm; there is no
+  update bot, and dependency updates are a manual pass under the 7-day rule.
 
 ### Fixed
 
