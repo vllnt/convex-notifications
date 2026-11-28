@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Unreleased
+## [Unreleased]
+
+## [0.2.0] - 2026-11-28
 
 ### Added
 
@@ -26,6 +28,9 @@ All notable changes to this project are documented here. The format is based on
 - `@vllnt/convex-notifications/test` and the component sources use `.js` relative imports and
   reference Vite's types, so they type-check for consumers on `moduleResolution` `bundler` and
   `nodenext`.
+- `register(t)` from `@vllnt/convex-notifications/test` accepts a host app's
+  `convexTest(schema, modules)` instance for any host schema; it was typed to the component's own
+  schema, so a host schema with its own tables failed with TS2345.
 
 ### Changed
 
@@ -34,6 +39,8 @@ All notable changes to this project are documented here. The format is based on
 - Every push to `main` that touches the package or its shipped docs publishes a `canary`
   build; the repository-variable gate on canary publishing is removed.
 - `homepage` points to https://oss.vllnt.com/packages/convex-notifications.
+- CI type-checks test files and the example app, and every publish first installs the packed
+  tarball in a consumer on `convex` 1.45.0 and runs a host-app `convex-test` through `register(t)`.
 - Upgrade development dependencies (`vitest` and `@vitest/coverage-v8` 5.1.1, `vite` 8.3.8,
   `convex-test` 0.0.73, `convex` 1.51, `prettier` 3.10.1, `eslint` 10.15.0,
   `@vllnt/typescript` 3.0.0) and `@convex-dev/aggregate` to 0.3.4, and the package manager to
